@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/projects/:id([a-z0-9]{16})",
+      "destination": "/projects/index.html"
+    },
+    {
+      "source": "/projects/:id([a-z0-9]{16})/",
+      "destination": "/projects/index.html"
+    }
+  ]
+}
