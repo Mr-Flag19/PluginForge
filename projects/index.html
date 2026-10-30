@@ -110,7 +110,7 @@
 
     const SEED_CHATS = [
         {
-            id: "c1",
+            id: "9b254kthkpvjw22a",
             title: "Prison mine with rank progression",
             group: "Today",
             messages: [
@@ -133,7 +133,7 @@
             ]
         },
         {
-            id: "c2",
+            id: "01hq9xohsdg04hjq",
             title: "Lifesteal hearts and revive beacons",
             group: "Today",
             messages: [
@@ -146,7 +146,7 @@
             ]
         },
         {
-            id: "c3",
+            id: "ze17wsw2unzb1vei",
             title: "Land claims with trust levels",
             group: "Yesterday",
             messages: [
@@ -159,7 +159,7 @@
             ]
         },
         {
-            id: "c4",
+            id: "a3zt3myz1sohhuzv",
             title: "RPG classes with mana and spells",
             group: "Yesterday",
             messages: [
@@ -172,7 +172,7 @@
             ]
         },
         {
-            id: "c5",
+            id: "gsfl3eudliny43oq",
             title: "Guild territory wars and shared bank",
             group: "Previous 7 days",
             messages: [
@@ -185,7 +185,7 @@
             ]
         },
         {
-            id: "c6",
+            id: "mbqmk2ne6zg8ngig",
             title: "Vault economy with player shops",
             group: "Previous 7 days",
             messages: [
@@ -198,6 +198,48 @@
             ]
         }
     ];
+
+    const ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const ID_FROM_PATH = /\/projects\/([a-z0-9]{16})\/?$/;
+    const STORAGE_KEY = 'pluginforge.chats.v1';
+
+    // 16 random characters (a-z, 0-9) from the browser's secure random source.
+    // Bytes of 252 or higher are skipped so every character is equally likely.
+    function newProjectId() {
+        let id = '';
+        while (id.length < 16) {
+            const bytes = new Uint8Array(32);
+            crypto.getRandomValues(bytes);
+            for (const b of bytes) {
+                if (b < 252 && id.length < 16) id += ID_CHARS[b % 36];
+            }
+        }
+        return id;
+    }
+
+    function getIdFromPath() {
+        const m = window.location.pathname.match(ID_FROM_PATH);
+        return m ? m[1] : null;
+    }
+
+    function navigateTo(id, replace) {
+        try {
+            const url = id ? '/projects/' + id : '/projects/';
+            if (window.location.pathname === url) return;
+            window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
+        } catch (e) {}
+    }
+
+    function loadChats() {
+        try {
+            const raw = window.localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return parsed;
+            }
+        } catch (e) {}
+        return SEED_CHATS;
+    }
 
     function FileRow({ f }) {
         return (
@@ -429,10 +471,13 @@
         const [draft, setDraft] = React.useState('');
         const [pendingId, setPendingId] = React.useState(null);
         const [showPricing, setShowPricing] = React.useState(() => window.location.hash === '#pricing');
+        const [copied, setCopied] = React.useState(false);
         const endRef = React.useRef(null);
         const taRef = React.useRef(null);
 
         const active = chats.find((c) => c.id === activeId) || null;
+        const urlId = getIdFromPath();
+        const missingId = !active && urlId && !chats.some((c) => c.id === urlId) ? urlId : null;
         const messages = active ? active.messages : [];
         const isPending = pendingId !== null && pendingId === activeId;
 
@@ -456,18 +501,23 @@
 
         const selectChat = (id) => {
             setActiveId(id);
+            navigateTo(id);
             setSidebarOpen(false);
         };
 
         const newChat = () => {
             setActiveId(null);
+            navigateTo(null);
             setSidebarOpen(false);
             if (taRef.current) taRef.current.focus();
         };
 
         const deleteChat = (id) => {
             setChats((prev) => prev.filter((c) => c.id !== id));
-            if (activeId === id) setActiveId(null);
+            if (activeId === id) {
+                setActiveId(null);
+                navigateTo(null, true);
+            }
         };
 
         const send = () => {
@@ -476,10 +526,11 @@
             const userMsg = { role: 'user', text };
             let id = activeId;
             if (!active) {
-                id = 'c' + Date.now();
+                id = newProjectId();
                 const title = text.length > 44 ? text.slice(0, 44).trimEnd() + '…' : text;
                 setChats((prev) => [{ id, title, group: 'Today', messages: [userMsg] }, ...prev]);
                 setActiveId(id);
+                navigateTo(id);
             } else {
                 setChats((prev) => prev.map((c) => (c.id === id ? { ...c, messages: [...c.messages, userMsg] } : c)));
             }
@@ -489,6 +540,16 @@
                 setChats((prev) => prev.map((c) => (c.id === id ? { ...c, messages: [...c.messages, { role: 'assistant', text: NOT_CONNECTED }] } : c)));
                 setPendingId(null);
             }, 1100);
+        };
+
+        const copyId = () => {
+            if (!active) return;
+            try {
+                navigator.clipboard.writeText(active.id).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                }).catch(() => {});
+            } catch (e) {}
         };
 
         const onKeyDown = (e) => {
@@ -516,7 +577,7 @@
                     style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
                 >
                     <div className="px-4 py-4 flex items-center justify-between">
-                        <a href="../" className="flex items-center gap-2.5">
+                        <a href="/" className="flex items-center gap-2.5">
                             <LogoMark />
                             <span className="font-bold tracking-tight text-base text-[#f4f4f5]">PluginForge</span>
                         </a>
@@ -623,8 +684,18 @@
                         </h1>
                         <span className="text-[10px] font-mono text-[#26282B] bg-[#f4f4f5] px-2.5 py-0.5 rounded-full font-semibold shrink-0">Preview</span>
                         <div className="ml-auto flex items-center gap-2 shrink-0">
+                            {active && (
+                                <button
+                                    onClick={copyId}
+                                    title="Copy project ID"
+                                    className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-mono text-[#a1a1aa] hover:text-[#f4f4f5] bg-[#2C2E31] border border-[#3A3D42] px-2.5 py-1 rounded-md transition-colors"
+                                >
+                                    <span className="text-[#71717a]">ID</span>
+                                    {copied ? 'Copied' : active.id}
+                                </button>
+                            )}
                             <span className="hidden sm:inline-block text-[11px] font-mono text-[#a1a1aa] bg-[#2C2E31] border border-[#3A3D42] px-2.5 py-1 rounded-md">Paper 1.21.x</span>
-                            <a href="../" className="text-[#a1a1aa] hover:text-[#f4f4f5] text-xs flex items-center gap-1.5 px-2 py-1 transition-colors">
+                            <a href="/" className="text-[#a1a1aa] hover:text-[#f4f4f5] text-xs flex items-center gap-1.5 px-2 py-1 transition-colors">
                                 <Icon d={ICONS.back} className="w-3.5 h-3.5" />
                                 <span className="hidden sm:inline">Back to site</span>
                             </a>
@@ -635,6 +706,11 @@
                         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 min-h-full flex flex-col">
                             {!active && (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
+                                    {missingId && (
+                                        <div role="status" className="mb-8 max-w-md bg-[#2C2E31] border border-[#3A3D42] rounded-lg px-4 py-3 text-xs text-[#a1a1aa] leading-relaxed">
+                                            No project found with the ID <span className="font-mono text-[#f4f4f5] break-all">{missingId}</span>. It may have been deleted, or it was created in a different browser.
+                                        </div>
+                                    )}
                                     <LogoMark className="w-10 h-10" />
                                     <h2 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight text-[#f4f4f5]">What do you want to build?</h2>
                                     <p className="mt-3 max-w-md text-xs sm:text-sm text-[#a1a1aa] leading-relaxed">
@@ -715,8 +791,29 @@
 
 
     function App() {
-        const [chats, setChats] = React.useState(SEED_CHATS);
-        const [activeId, setActiveId] = React.useState('c1');
+        const [chats, setChats] = React.useState(loadChats);
+        const [activeId, setActiveId] = React.useState(() => {
+            const id = getIdFromPath();
+            return id && loadChats().some((c) => c.id === id) ? id : null;
+        });
+        const chatsRef = React.useRef(chats);
+        chatsRef.current = chats;
+
+        // Keep chats in this browser until a real backend stores them
+        React.useEffect(() => {
+            try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)); } catch (e) {}
+        }, [chats]);
+
+        // Browser back and forward buttons
+        React.useEffect(() => {
+            const onPop = () => {
+                const id = getIdFromPath();
+                setActiveId(id && chatsRef.current.some((c) => c.id === id) ? id : null);
+            };
+            window.addEventListener('popstate', onPop);
+            return () => window.removeEventListener('popstate', onPop);
+        }, []);
+
         return <ChatApp chats={chats} setChats={setChats} activeId={activeId} setActiveId={setActiveId} />;
     }
 
