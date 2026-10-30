@@ -6,6 +6,7 @@
 <title>PluginForge — Build Paper plugins without writing Java</title>
 <meta name="description" content="Describe a Minecraft plugin in plain English and PluginForge generates a working Paper plugin for your server.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233A3D42'/%3E%3Cpath d='M11 11l5 5-5 5m7 0h4' fill='none' stroke='%23f4f4f5' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script src="/config.js"></script>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
@@ -63,6 +64,10 @@
 <div id="root"></div>
 
 <script type="text/babel">
+    // Where the "Get Access" buttons go. Set in config.js, falls back to /projects/
+    const PROJECTS_PATH = String((window.PLUGINFORGE_CONFIG && window.PLUGINFORGE_CONFIG.projectsPath) || 'projects').replace(/^\/+|\/+$/g, '');
+    const PROJECTS_URL = '/' + PROJECTS_PATH + '/';
+
     function App() {
         const promptExamples = [
             "Create a prison mine plugin with rank progression and automated resets.",
@@ -177,7 +182,7 @@
                             <a href="#examples" className="hover:text-[#f4f4f5] transition-colors">Examples</a>
                             <a href="#faq" className="hover:text-[#f4f4f5] transition-colors">FAQ</a>
                         </nav>
-                        <a href="projects/" className="bg-[#2C2E31] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-medium px-3.5 py-1.5 rounded transition-colors">
+                        <a href={PROJECTS_URL} className="bg-[#2C2E31] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-medium px-3.5 py-1.5 rounded transition-colors">
                             Get Access
                         </a>
                     </div>
