@@ -281,11 +281,154 @@
         );
     }
 
+    function PricingModal({ onClose }) {
+        const [isAnnual, setIsAnnual] = React.useState(false);
+        const [notice, setNotice] = React.useState('');
+
+        React.useEffect(() => {
+            const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+            window.addEventListener('keydown', onKey);
+            return () => window.removeEventListener('keydown', onKey);
+        }, []);
+
+        const choose = () => setNotice("Billing isn't connected yet, so plans can't be changed in this preview.");
+
+        return (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md" onClick={onClose}>
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Pricing tiers"
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-[#2C2E31] border border-[#3A3D42] rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+                >
+                    <div className="p-5 border-b border-[#3A3D42] flex items-center justify-between bg-[#26282B] shrink-0">
+                        <div>
+                            <h2 className="text-base font-semibold text-[#f4f4f5]">Pricing Tiers</h2>
+                            <p className="text-[11px] font-mono text-[#71717a]">You are on the Stone Tier</p>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="text-[#a1a1aa] hover:text-[#f4f4f5] p-1.5 rounded-lg bg-[#2C2E31] border border-[#3A3D42] transition-colors"
+                            aria-label="Close pricing"
+                        >
+                            <Icon d={ICONS.close} className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="p-6 overflow-y-auto">
+                        {/* Monthly / Annual Billing Toggle */}
+                        <div className="flex items-center justify-center gap-3 mb-8">
+                            <span className={`text-xs font-medium transition-colors ${!isAnnual ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]'}`}>
+                                Monthly
+                            </span>
+                            <button
+                                onClick={() => setIsAnnual(!isAnnual)}
+                                className="w-12 h-6 bg-[#2C2E31] border border-[#3A3D42] rounded-full p-0.5 relative transition-colors focus:outline-none"
+                                aria-label="Toggle billing cycle"
+                            >
+                                <div className={`w-4 h-4 bg-[#f4f4f5] rounded-full transition-transform duration-200 ease-in-out ${isAnnual ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <span className={`text-xs font-medium transition-colors ${isAnnual ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]'}`}>
+                                    Annual
+                                </span>
+                                <span className="text-[10px] font-mono text-[#26282B] bg-[#f4f4f5] font-bold px-2 py-0.5 rounded-full">
+                                    Save 20%
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+                            <div className="bg-[#26282B] border border-[#3A3D42] rounded-lg p-6 flex flex-col justify-between">
+                                <div>
+                                    <div className="text-sm font-medium text-[#f4f4f5]">Stone Tier</div>
+                                    <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">$0</div>
+                                    <ul className="mt-6 space-y-3 text-xs text-[#a1a1aa] border-t border-[#3A3D42] pt-4">
+                                        <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 5 plugin generations/day</li>
+                                        <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Compiled .jar download</li>
+                                        <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Automated error self-healing</li>
+                                    </ul>
+                                </div>
+                                <div className="mt-6 pt-4">
+                                    <div className="w-full text-center bg-[#2C2E31] border border-[#3A3D42] text-[#71717a] text-xs font-semibold py-2 rounded">
+                                        Current plan
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-[#26282B] border border-[#f4f4f5]/40 rounded-lg p-6 flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-[#f4f4f5]">Iron Tier</span>
+                                        <span className="text-[10px] font-mono text-[#26282B] bg-[#f4f4f5] px-2.5 py-0.5 rounded-full font-semibold">Popular</span>
+                                    </div>
+                                    <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">
+                                        {isAnnual ? "$7.99" : "$9.99"}
+                                        <span className="text-xs font-normal text-[#a1a1aa]">/mo</span>
+                                    </div>
+                                    {isAnnual && (
+                                        <div className="text-[11px] text-[#a1a1aa] mt-1 font-mono">Billed annually ($95.88/yr)</div>
+                                    )}
+                                    <div className="mt-6 border-t border-[#3A3D42] pt-4">
+                                        <p className="text-[11px] text-[#e4e4e7] font-medium mb-3">
+                                            Everything in Stone Tier, plus:
+                                        </p>
+                                        <ul className="space-y-3 text-xs text-[#a1a1aa]">
+                                            <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 250 generations/mo</li>
+                                            <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Full Java source code access</li>
+                                            <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Compile checking</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div className="mt-6 pt-4">
+                                    <button onClick={choose} className="w-full text-center bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#26282B] text-xs font-semibold py-2 rounded transition-colors">
+                                        Get Access
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="bg-[#26282B] border border-[#3A3D42] rounded-lg p-6 flex flex-col justify-between">
+                                <div>
+                                    <div className="text-sm font-medium text-[#f4f4f5]">Diamond Tier</div>
+                                    <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">
+                                        {isAnnual ? "$15.99" : "$19.99"}
+                                        <span className="text-xs font-normal text-[#a1a1aa]">/mo</span>
+                                    </div>
+                                    {isAnnual && (
+                                        <div className="text-[11px] text-[#a1a1aa] mt-1 font-mono">Billed annually ($191.88/yr)</div>
+                                    )}
+                                    <div className="mt-6 border-t border-[#3A3D42] pt-4">
+                                        <p className="text-[11px] text-[#e4e4e7] font-medium mb-3">
+                                            Everything in Iron Tier, plus:
+                                        </p>
+                                        <ul className="space-y-3 text-xs text-[#a1a1aa]">
+                                            <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 1000 generations/mo</li>
+                                            <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Project storage & history</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div className="mt-6 pt-4">
+                                    <button onClick={choose} className="w-full text-center bg-[#2C2E31] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-semibold py-2 rounded transition-colors">
+                                        Get Access
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p role="status" className="mt-6 min-h-[1rem] text-center text-xs text-[#a1a1aa]">{notice}</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     function ChatApp({ chats, setChats, activeId, setActiveId }) {
         const [sidebarOpen, setSidebarOpen] = React.useState(false);
         const [query, setQuery] = React.useState('');
         const [draft, setDraft] = React.useState('');
         const [pendingId, setPendingId] = React.useState(null);
+        const [showPricing, setShowPricing] = React.useState(() => window.location.hash === '#pricing');
         const endRef = React.useRef(null);
         const taRef = React.useRef(null);
 
@@ -357,6 +500,8 @@
 
         return (
             <div className="h-full flex bg-[#26282B] text-[#f4f4f5] font-sans overflow-hidden relative">
+                {showPricing && <PricingModal onClose={() => setShowPricing(false)} />}
+
                 {/* Mobile backdrop */}
                 {sidebarOpen && (
                     <div
@@ -452,9 +597,9 @@
                                 <div className="text-sm font-medium text-[#f4f4f5] truncate">Steve</div>
                                 <div className="text-[11px] font-mono text-[#71717a]">Stone Tier</div>
                             </div>
-                            <a href="../#pricing" className="bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-[11px] font-medium px-2.5 py-1 rounded transition-colors">
+                            <button onClick={() => setShowPricing(true)} className="bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-[11px] font-medium px-2.5 py-1 rounded transition-colors">
                                 Upgrade
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </aside>
@@ -579,4 +724,3 @@
 </script>
 </body>
 </html>
-
