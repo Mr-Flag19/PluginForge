@@ -200,7 +200,7 @@
     ];
 
     const ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    const ID_FROM_PATH = /\/projects\/([a-z0-9]{16})\/?$/;
+    const ID_FROM_PATH = /\/([a-z0-9]{16})\/?$/;
     const STORAGE_KEY = 'pluginforge.chats.v1';
 
     // 16 random characters (a-z, 0-9) from the browser's secure random source.
@@ -222,9 +222,16 @@
         return m ? m[1] : null;
     }
 
+    // The folder this page lives in, e.g. /projects/ (works for any folder name)
+    function getBasePath() {
+        const path = window.location.pathname.replace(/\/index\.html$/, '').replace(/\/[a-z0-9]{16}\/?$/, '').replace(/\/+$/, '');
+        return path + '/';
+    }
+
     function navigateTo(id, replace) {
         try {
-            const url = id ? '/projects/' + id : '/projects/';
+            const base = getBasePath();
+            const url = id ? base + id : base;
             if (window.location.pathname === url) return;
             window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
         } catch (e) {}
