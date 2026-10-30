@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PluginForge — Build Paper plugins without writing Java</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Geist & JetBrains Mono Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #26282B;
+            color: #f4f4f5;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Developer dot-grid background overlay */
+        .bg-grid-pattern {
+            background-image: radial-gradient(#3A3D42 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #26282B;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3A3D42;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b4f56;
+        }
+    </style>
+</head>
+<body class="bg-[#26282B] text-[#f4f4f5] antialiased selection:bg-[#3A3D42] selection:text-[#f4f4f5]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function App() {
+            const promptExamples = [
+                "Create a prison mine plugin with rank progression and automated resets.",
+                "Build a custom lifesteal system with heart crafting recipes and revive beacons.",
+                "Design an automated economy plugin with player shops and Vault integration.",
+                "Create a claims plugin with trust levels, sub-claims, and clean chat notifications.",
+                "Build an RPG class selector with mana regeneration, custom spells, and cooldowns.",
+                "Generate a guild/clan system with territory wars, shared bank, and chat channels."
+            ];
+
+            const [displayedPrompt, setDisplayedPrompt] = React.useState('');
+            const [openFaq, setOpenFaq] = React.useState(null);
+            const [mousePos, setMousePos] = React.useState({ x: 50, y: 30 });
+            const [isAnnual, setIsAnnual] = React.useState(false);
+            const [activeLegalModal, setActiveLegalModal] = React.useState(null); // 'privacy' | 'terms' | null
+
+            // Prevent background page scrolling when a modal is open
+            React.useEffect(() => {
+                if (activeLegalModal) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = '';
+                }
+                return () => {
+                    document.body.style.overflow = '';
+                };
+            }, [activeLegalModal]);
+
+            const handleMouseMove = (e) => {
+                const { clientX, clientY } = e;
+                const { innerWidth, innerHeight } = window;
+                setMousePos({
+                    x: Math.round((clientX / innerWidth) * 100),
+                    y: Math.round((clientY / innerHeight) * 100)
+                });
+            };
+
+            const promptContainerRef = React.useRef(null);
+
+            React.useEffect(() => {
+                if (promptContainerRef.current) {
+                    promptContainerRef.current.scrollLeft = promptContainerRef.current.scrollWidth;
+                }
+            }, [displayedPrompt]);
+
+            React.useEffect(() => {
+                let exampleIndex = 0;
+                let charIndex = 0;
+                let isDeleting = false;
+                let timeoutId = null;
+
+                const typeEffect = () => {
+                    const currentFullText = promptExamples[exampleIndex];
+
+                    if (!isDeleting) {
+                        setDisplayedPrompt(currentFullText.slice(0, charIndex + 1));
+                        charIndex++;
+
+                        if (charIndex === currentFullText.length) {
+                            isDeleting = true;
+                            timeoutId = setTimeout(typeEffect, 2500);
+                            return;
+                        }
+                        timeoutId = setTimeout(typeEffect, 40);
+                    } else {
+                        setDisplayedPrompt(currentFullText.slice(0, charIndex - 1));
+                        charIndex--;
+
+                        if (charIndex === 0) {
+                            isDeleting = false;
+                            exampleIndex = (exampleIndex + 1) % promptExamples.length;
+                            timeoutId = setTimeout(typeEffect, 400);
+                            return;
+                        }
+                        timeoutId = setTimeout(typeEffect, 20);
+                    }
+                };
+
+                timeoutId = setTimeout(typeEffect, 500);
+                return () => clearTimeout(timeoutId);
+            }, []);
+
+            return (
+                <div 
+                    onMouseMove={handleMouseMove}
+                    className="min-h-screen bg-[#26282B] text-[#f4f4f5] flex flex-col font-sans relative overflow-x-hidden"
+                >
+                    {/* Subtle Dot Grid Background Pattern */}
+                    <div className="fixed inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
+
+                    {/* Subtle Interactive Radial Spotlight */}
+                    <div 
+                        className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-500"
+                        style={{
+                            background: `radial-gradient(600px circle at ${mousePos.x}% ${mousePos.y}%, rgba(58, 61, 66, 0.35), transparent 80%)`
+                        }}
+                    ></div>
+
+                    {/* Header / Navbar */}
+                    <header className="py-5 px-6 sm:px-8 border-b border-[#3A3D42] sticky top-0 bg-[#26282B]/90 backdrop-blur-md z-50">
+                        <div className="max-w-6xl mx-auto flex items-center justify-between">
+                            <a href="#" className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 bg-[#3A3D42] rounded-md flex items-center justify-center text-[#f4f4f5]">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3" />
+                                    </svg>
+                                </div>
+                                <span className="font-bold tracking-tight text-base text-[#f4f4f5]">PluginForge</span>
+                            </a>
+                            <nav className="hidden md:flex items-center gap-6 text-xs text-[#a1a1aa]">
+                                <a href="#overview" className="hover:text-[#f4f4f5] transition-colors">Overview</a>
+                                <a href="#built-for" className="hover:text-[#f4f4f5] transition-colors">Built For</a>
+                                <a href="#examples" className="hover:text-[#f4f4f5] transition-colors">Examples</a>
+                                <a href="#pricing" className="hover:text-[#f4f4f5] transition-colors">Pricing</a>
+                                <a href="#faq" className="hover:text-[#f4f4f5] transition-colors">FAQ</a>
+                            </nav>
+                            <a href="#pricing" className="bg-[#2C2E31] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-medium px-3.5 py-1.5 rounded transition-colors">
+                                Get Access
+                            </a>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="flex-1 relative z-10">
+                        {/* Hero Section */}
+                        <section className="py-20 sm:py-28 px-6 text-center">
+                            <div className="max-w-3xl mx-auto">
+                                <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#f4f4f5] leading-tight">
+                                    Build a Plugin in Minutes
+                                </h1>
+                                <div className="mt-6 max-w-xl mx-auto text-center">
+                                    <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed">
+                                        Never coded in Java before? No problem. Describe what you want in plain English, and PluginForge instantly generates working Paper plugins ready for your server.
+                                    </p>
+                                </div>
+
+                                {/* Modern Prompt Box with Clickable Tags */}
+                                <div className="mt-10 max-w-2xl mx-auto bg-[#2C2E31] border border-[#3A3D42] rounded-2xl p-3 sm:p-4 text-left shadow-xl">
+                                    <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-[#26282B] border border-[#3A3D42] focus-within:border-[#71717a] rounded-xl p-2 transition-all">
+                                        <div className="flex items-center flex-1 min-w-0 px-2 py-1.5">
+                                            <div className="text-[#a1a1aa] mr-3 shrink-0">
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3" />
+                                                </svg>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={displayedPrompt}
+                                                onChange={(e) => setDisplayedPrompt(e.target.value)}
+                                                placeholder="Describe the plugin you want to generate..."
+                                                className="w-full bg-transparent text-sm text-[#f4f4f5] placeholder-[#71717a] focus:outline-none font-sans"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#3A3D42] px-2 sm:px-0">
+                                            <span className="text-[11px] font-mono text-[#71717a]">
+                                                {displayedPrompt.length}/500
+                                            </span>
+                                            <button className="bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#26282B] p-2.5 rounded-lg transition-colors flex items-center justify-center shrink-0" aria-label="Build Plugin">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-3.5 flex flex-wrap items-center gap-1.5 px-1">
+                                        <span className="text-[11px] text-[#71717a] font-medium mr-1">Examples:</span>
+                                        {[
+                                            { label: "Economy System", text: "Create an economy plugin with Vault support and player trading." },
+                                            { label: "Prison Mine", text: "Build a prison mine with rank progression and automated resets." },
+                                            { label: "Land Claims", text: "Design a land claims system with trust permissions and borders." }
+                                        ].map((item, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setDisplayedPrompt(item.text)}
+                                                className="bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-2.5 py-1 rounded-md text-[11px] text-[#a1a1aa] hover:text-[#f4f4f5] transition-colors cursor-pointer"
+                                            >
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                                    <a href="https://discord.gg/tBYx3QkwhH" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto bg-[#5865F2] hover:bg-[#4752C4] text-white text-sm font-semibold px-6 py-2.5 rounded transition-colors flex items-center justify-center gap-2">
+                                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.011c3.927 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                                        </svg>
+                                        <span>Join Discord Server</span>
+                                    </a>
+                                    <a href="#overview" className="w-full sm:w-auto bg-[#2C2E31] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-sm font-medium px-6 py-2.5 rounded transition-colors">
+                                        Why PluginForge
+                                    </a>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Overview */}
+                        <section id="overview" className="py-20 px-6 border-t border-[#3A3D42]">
+                            <div className="max-w-3xl mx-auto">
+                                <h2 className="text-2xl font-semibold tracking-tight text-[#f4f4f5] mb-6">
+                                    Skip the headache of learning Java first
+                                </h2>
+                                <div className="space-y-4 text-base text-[#a1a1aa] leading-relaxed">
+                                    <p>
+                                        Making plugins used to mean wrestling with complex IDEs, setting up Gradle builds, and debugging confusing Java errors before you could even test a simple command on your server.
+                                    </p>
+                                    <p>
+                                        PluginForge cuts straight to the fun part. Just tell it what you want your plugin to do, get a ready-to-use file, and drop it straight into your server's plugins folder.
+                                    </p>
+                                    <p>
+                                        When you're ready to start learning how the code actually works, you can dive into the clean Java source files whenever you want.
+                                    </p>
+                                    <p className="text-[#f4f4f5] font-medium pt-2">
+                                        Zero coding background needed to get started.
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Built For */}
+                        <section id="built-for" className="py-20 px-6 border-t border-[#3A3D42]">
+                            <div className="max-w-4xl mx-auto">
+                                <h2 className="text-2xl font-semibold tracking-tight text-[#f4f4f5] mb-8">
+                                    Built For
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-[#2C2E31] border border-[#3A3D42] p-6 sm:p-8 rounded-lg flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-medium text-[#f4f4f5] mb-3">New Developers</h3>
+                                            <p className="text-sm text-[#a1a1aa] leading-relaxed mb-6">
+                                                Learn faster by generating idiomatic Paper plugins you can read, modify, and experiment with.
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-mono uppercase tracking-wider text-[#71717a] mb-3">Great for:</div>
+                                            <ul className="space-y-2 text-sm text-[#f4f4f5]">
+                                                <li className="flex items-center gap-2"><span className="text-[#71717a] font-mono">•</span> Learning Java</li>
+                                                <li className="flex items-center gap-2"><span className="text-[#71717a] font-mono">•</span> Understanding PaperMC APIs</li>
+                                                <li className="flex items-center gap-2"><span className="text-[#71717a] font-mono">•</span> Exploring plugin architecture</li>
+                                                <li className="flex items-center gap-2"><span className="text-[#71717a] font-mono">•</span> Creating first projects</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-[#2C2E31] border border-[#3A3D42] p-6 sm:p-8 rounded-lg flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-medium text-[#f4f4f5] mb-3">Experienced Developers</h3>
+                                            <p className="text-sm text-[#a1a1aa] leading-relaxed mb-6">
+                                                Generate Paper plugin foundations instantly and focus on building unique server mechanics.
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-mono uppercase tracking-wider text-[#71717a] mb-3">Great for:</div>
+                                            <ul className="space-y-2 text-sm text-[#f4f4f5]">
+                                                <li className="flex items-center gap-2"><span className="text-[#71717a] font-mono">•</span> Rapid prototyping</li>
+                                                <li className="flex items-center gap-2"><span className="text-[#71717a] font-mono">•</span> Boilerplate generation</li>
+                                                <li className="flex items-center gap-2"><span className="text-[#71717a] font-mono">•</span> paper-plugin.yml & listener setup</li>
+                                                <li className="flex items-center gap-2"><span className="text-[#71717a] font-mono">•</span> Internal server tooling</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Examples */}
+                        <section id="examples" className="py-20 px-6 border-t border-[#3A3D42]">
+                            <div className="max-w-5xl mx-auto">
+                                <h2 className="text-2xl font-semibold tracking-tight text-[#f4f4f5] mb-8">
+                                    What can you build?
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {[
+                                        { title: "Custom Enchantments", desc: "Create unique player abilities with modern Paper component tooltips and event triggers." },
+                                        { title: "Economy System", desc: "Flexible vaults, player-to-player trading, and custom currency handlers." },
+                                        { title: "Prison Core", desc: "Automated mine resets, rankup progression trees, and block multipliers." },
+                                        { title: "Land Claims", desc: "Protect player builds with visual boundary markers and permission flags." },
+                                        { title: "RPG Classes", desc: "Skill progression, custom mana systems, and class-specific abilities." },
+                                        { title: "Shop System", desc: "GUI item shops, category navigation, buy/sell prices, and Vault integration." }
+                                    ].map((item, idx) => (
+                                        <div key={idx} className="bg-[#2C2E31] border border-[#3A3D42] p-6 rounded-lg">
+                                            <h3 className="text-base font-medium text-[#f4f4f5] mb-2">{item.title}</h3>
+                                            <p className="text-sm text-[#a1a1aa] leading-relaxed">{item.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Deliverables / Releases List (Target Section) */}
+                        <section className="py-20 px-6 border-t border-[#3A3D42]">
+                            <div className="max-w-3xl mx-auto">
+                                <h2 className="text-2xl font-semibold tracking-tight text-[#f4f4f5] mb-2">
+                                    Generated Assets
+                                </h2>
+                                <p className="text-xs sm:text-sm text-[#a1a1aa] mb-8">
+                                    Sample release artifacts produced directly by PluginForge.
+                                </p>
+                                
+                                <div className="bg-[#2C2E31] border border-[#3A3D42] rounded-lg overflow-hidden divide-y divide-[#3A3D42]">
+                                    <div className="p-4 flex items-center gap-3.5 hover:bg-[#3A3D42]/30 transition-colors">
+                                        <div className="text-[#a1a1aa] shrink-0">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                            </svg>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-sm font-medium text-[#f4f4f5]">PrisonCore.jar</span>
+                                                <span className="text-[11px] text-[#71717a] font-mono">248 KB</span>
+                                            </div>
+                                            <p className="text-xs text-[#a1a1aa] mt-0.5">Compiled Paper plugin binary ready for your plugins folder</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 flex items-center gap-3.5 hover:bg-[#3A3D42]/30 transition-colors">
+                                        <div className="text-[#a1a1aa] shrink-0">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                            </svg>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-sm font-medium text-[#f4f4f5]">Guilds.jar</span>
+                                                <span className="text-[11px] text-[#71717a] font-mono">182 KB</span>
+                                            </div>
+                                            <p className="text-xs text-[#a1a1aa] mt-0.5">Territory claims, clan chat channels, and bank integration</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 flex items-center gap-3.5 hover:bg-[#3A3D42]/30 transition-colors">
+                                        <div className="text-[#a1a1aa] shrink-0">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                            </svg>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-sm font-medium text-[#f4f4f5]">Economy.jar</span>
+                                                <span className="text-[11px] text-[#71717a] font-mono">115 KB</span>
+                                            </div>
+                                            <p className="text-xs text-[#a1a1aa] mt-0.5">Vault API provider with player trading and physical currency</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 flex items-center gap-3.5 bg-[#26282B]/40 hover:bg-[#3A3D42]/30 transition-colors">
+                                        <div className="text-[#a1a1aa] shrink-0">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                            </svg>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono text-sm font-medium text-[#f4f4f5]">Source code (zip)</span>
+                                                    <svg className="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                                    </svg>
+                                                </div>
+                                                <span className="text-[11px] font-medium text-[#a1a1aa] bg-[#26282B] border border-[#3A3D42] px-2.5 py-0.5 rounded">
+                                                    Iron & Diamond tiers
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-[#a1a1aa] mt-0.5">Readable Java source files, listeners, commands, config.yml, and paper-plugin.yml</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Pricing */}
+                        <section id="pricing" className="py-20 px-6 border-t border-[#3A3D42]">
+                            <div className="max-w-5xl mx-auto">
+                                <h2 className="text-2xl font-semibold tracking-tight text-[#f4f4f5] mb-4 text-center">
+                                    Pricing Tiers
+                                </h2>
+
+                                {/* Monthly / Annual Billing Toggle */}
+                                <div className="flex items-center justify-center gap-3 mb-12">
+                                    <span className={`text-xs font-medium transition-colors ${!isAnnual ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]'}`}>
+                                        Monthly
+                                    </span>
+                                    <button 
+                                        onClick={() => setIsAnnual(!isAnnual)}
+                                        className="w-12 h-6 bg-[#2C2E31] border border-[#3A3D42] rounded-full p-0.5 relative transition-colors focus:outline-none"
+                                        aria-label="Toggle billing cycle"
+                                    >
+                                        <div className={`w-4 h-4 bg-[#f4f4f5] rounded-full transition-transform duration-200 ease-in-out ${isAnnual ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-xs font-medium transition-colors ${isAnnual ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]'}`}>
+                                            Annual
+                                        </span>
+                                        <span className="text-[10px] font-mono text-[#26282B] bg-[#f4f4f5] font-bold px-2 py-0.5 rounded-full">
+                                            Save 20%
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto items-stretch">
+                                    <div className="bg-[#2C2E31] border border-[#3A3D42] rounded-lg p-6 flex flex-col justify-between">
+                                        <div>
+                                            <div className="text-sm font-medium text-[#f4f4f5]">Stone Tier</div>
+                                            <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">$0</div>
+                                            <ul className="mt-6 space-y-3 text-xs text-[#a1a1aa] border-t border-[#3A3D42] pt-4">
+                                                <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 5 plugin generations/day</li>
+                                                <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Compiled .jar download</li>
+                                                <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Automated error self-healing</li>
+                                            </ul>
+                                        </div>
+                                        <div className="mt-6 pt-4">
+                                            <a href="#access" className="w-full block text-center bg-[#282A2D] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-semibold py-2 rounded transition-colors">
+                                                Get Started
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-[#2C2E31] border border-[#f4f4f5]/40 rounded-lg p-7 sm:py-8 sm:px-7 flex flex-col justify-between relative md:-my-3 md:py-9">
+                                        <div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-semibold text-[#f4f4f5]">Iron Tier</span>
+                                                <span className="text-[10px] font-mono text-[#26282B] bg-[#f4f4f5] px-2.5 py-0.5 rounded-full font-semibold">Popular</span>
+                                            </div>
+                                            <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">
+                                                {isAnnual ? "$7.99" : "$9.99"}
+                                                <span className="text-xs font-normal text-[#a1a1aa]">/mo</span>
+                                            </div>
+                                            {isAnnual && (
+                                                <div className="text-[11px] text-[#a1a1aa] mt-1 font-mono">Billed annually ($95.88/yr)</div>
+                                            )}
+                                            
+                                            <div className="mt-6 border-t border-[#3A3D42] pt-4">
+                                                <p className="text-[11px] text-[#e4e4e7] font-medium mb-3">
+                                                    Everything in Stone Tier, plus:
+                                                </p>
+                                                <ul className="space-y-3 text-xs text-[#a1a1aa]">
+                                                    <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 250 generations/mo</li>
+                                                    <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Full Java source code access</li>
+                                                    <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Compile checking</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div className="mt-6 pt-4">
+                                            <a href="#access" className="w-full block text-center bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#26282B] text-xs font-semibold py-2 rounded transition-colors">
+                                                Get Access
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-[#2C2E31] border border-[#3A3D42] rounded-lg p-6 flex flex-col justify-between">
+                                        <div>
+                                            <div className="text-sm font-medium text-[#f4f4f5]">Diamond Tier</div>
+                                            <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">
+                                                {isAnnual ? "$15.99" : "$19.99"}
+                                                <span className="text-xs font-normal text-[#a1a1aa]">/mo</span>
+                                            </div>
+                                            {isAnnual && (
+                                                <div className="text-[11px] text-[#a1a1aa] mt-1 font-mono">Billed annually ($191.88/yr)</div>
+                                            )}
+
+                                            <div className="mt-6 border-t border-[#3A3D42] pt-4">
+                                                <p className="text-[11px] text-[#e4e4e7] font-medium mb-3">
+                                                    Everything in Iron Tier, plus:
+                                                </p>
+                                                <ul className="space-y-3 text-xs text-[#a1a1aa]">
+                                                    <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 1000 generations/mo</li>
+                                                    <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Project storage & history</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div className="mt-6 pt-4">
+                                            <a href="#access" className="w-full block text-center bg-[#282A2D] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-semibold py-2 rounded transition-colors">
+                                                Get Access
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* FAQ */}
+                        <section id="faq" className="py-20 px-6 border-t border-[#3A3D42]">
+                            <div className="max-w-3xl mx-auto">
+                                <h2 className="text-2xl font-semibold tracking-tight text-[#f4f4f5] mb-8">
+                                    Frequently asked questions
+                                </h2>
+
+                                <div className="space-y-3">
+                                    {[
+                                        {
+                                            q: "What version of Paper is supported?",
+                                            a: "PluginForge exclusively builds plugins targeting PaperMC versions (1.20 through 1.21.x) using Java 17+ and 21 standards.",
+                                            icon: (
+                                                <svg className="w-4 h-4 text-[#a1a1aa] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 14.25l6.75 6.75 6.75-6.75M12 3v18" />
+                                                </svg>
+                                            )
+                                        },
+                                        {
+                                            q: "Do I own the generated plugin code?",
+                                            a: "Yes. All Java source code, paper-plugin.yml manifests, and compiled JAR binaries are 100% yours to modify, run, or distribute.",
+                                            icon: (
+                                                <svg className="w-4 h-4 text-[#a1a1aa] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751A11.959 11.959 0 0112 2.714z" />
+                                                </svg>
+                                            )
+                                        },
+                                        {
+                                            q: "Can I edit the code after it's generated?",
+                                            a: "Viewing and editing raw Java source code requires an Iron Tier or Diamond Tier plan. Stone Tier users receive ready-to-run compiled .jar files.",
+                                            icon: (
+                                                <svg className="w-4 h-4 text-[#a1a1aa] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                </svg>
+                                            )
+                                        },
+                                        {
+                                            q: "How do I install the generated plugin?",
+                                            a: "You receive a compiled .jar file designed specifically for Paper servers. Simply place it into your server's /plugins directory and restart.",
+                                            icon: (
+                                                <svg className="w-4 h-4 text-[#a1a1aa] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                                </svg>
+                                            )
+                                        },
+                                        {
+                                            q: "What happens if my plugin has a bug?",
+                                            a: "PluginForge automatically runs compile verification and self-healing checks on every generation. If something isn't working as expected, you can re-prompt with the error message to fix it instantly.",
+                                            icon: (
+                                                <svg className="w-4 h-4 text-[#a1a1aa] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                                </svg>
+                                            )
+                                        }
+                                    ].map((faq, idx) => (
+                                        <div key={idx} className="bg-[#2C2E31] border border-[#3A3D42] rounded-lg overflow-hidden">
+                                            <button
+                                                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                                                className="w-full p-4 text-left flex items-center justify-between text-sm font-medium text-[#f4f4f5] focus:outline-none hover:bg-[#3A3D42]/50 transition-colors gap-3"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {faq.icon}
+                                                    <span>{faq.q}</span>
+                                                </div>
+                                                <span className="text-[#a1a1aa] font-mono text-xs shrink-0">{openFaq === idx ? "—" : "+"}</span>
+                                            </button>
+                                            {openFaq === idx && (
+                                                <div className="px-4 pb-4 pl-11 text-sm text-[#a1a1aa] leading-relaxed border-t border-[#3A3D42] pt-3">
+                                                    {faq.a}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="py-12 px-6 border-t border-[#3A3D42] text-xs text-[#71717a] text-center">
+                        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 font-mono">
+                            <div>PluginForge © {new Date().getFullYear()}</div>
+                            <div className="flex items-center gap-6 text-[#a1a1aa]">
+                                <button 
+                                    onClick={() => setActiveLegalModal('privacy')}
+                                    className="hover:text-[#f4f4f5] transition-colors focus:outline-none"
+                                >
+                                    Privacy Policy
+                                </button>
+                                <button 
+                                    onClick={() => setActiveLegalModal('terms')}
+                                    className="hover:text-[#f4f4f5] transition-colors focus:outline-none"
+                                >
+                                    Terms of Service
+                                </button>
+                            </div>
+                        </div>
+                    </footer>
+
+                    {/* Legal Modal Component */}
+                    {activeLegalModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn">
+                            <div className="bg-[#2C2E31] border border-[#3A3D42] rounded-xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+                                <div className="p-5 border-b border-[#3A3D42] flex items-center justify-between bg-[#26282B] shrink-0">
+                                    <div>
+                                        <h3 className="text-base font-semibold text-[#f4f4f5]">
+                                            {activeLegalModal === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
+                                        </h3>
+                                        <p className="text-[11px] font-mono text-[#71717a]">
+                                            PluginForge Platform • Effective Date: October 2026
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setActiveLegalModal(null)}
+                                        className="text-[#a1a1aa] hover:text-[#f4f4f5] p-1.5 rounded-lg bg-[#2C2E31] border border-[#3A3D42] transition-colors"
+                                        aria-label="Close modal"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className="p-6 overflow-y-auto text-sm text-[#a1a1aa] leading-relaxed space-y-6">
+                                    {activeLegalModal === 'privacy' ? (
+                                        <>
+                                            <section className="bg-[#26282B]/60 p-4 rounded-lg border border-[#3A3D42]">
+                                                <h4 className="text-xs font-mono uppercase tracking-wider text-[#f4f4f5] font-semibold mb-1">Plain English Summary</h4>
+                                                <p className="text-xs text-[#a1a1aa]">
+                                                    We only collect what’s needed to build your Minecraft plugins and process your account logins. We never sell your prompt ideas, trade your data, or store your credit card information.
+                                                </p>
+                                            </section>
+
+                                            <section>
+                                                <h4 className="text-sm font-semibold text-[#f4f4f5] mb-2">1. Data We Collect</h4>
+                                                <div className="space-y-2 text-xs text-[#a1a1aa]">
+                                                    <p><strong className="text-[#f4f4f5]">Account Information:</strong> Your email address and Discord ID used for authentication and account management.</p>
+                                                    <p><strong className="text-[#f4f4f5]">Plugin Generation Prompts:</strong> Text descriptions, custom config rules, and technical specifications you enter to generate code.</p>
+                                                    <p><strong className="text-[#f4f4f5]">Technical & Diagnostic Logs:</strong> Compilation outputs, Java error traces, IP addresses, browser specs, and request timestamps to prevent abuse and improve performance.</p>
+                                                    <p><strong className="text-[#f4f4f5]">Payment Details:</strong> Encrypted transaction records and subscription status processed securely via Stripe. We do not store financial credentials.</p>
+                                                </div>
+                                            </section>
+
+                                            <section>
+                                                <h4 className="text-sm font-semibold text-[#f4f4f5] mb-2">2. How We Use Your Data</h4>
+                                                <ul className="list-disc pl-5 space-y-1.5 text-xs text-[#a1a1aa]">
+                                                    <li>Generating Java source code, plugin manifests (`paper-plugin.yml`), and compiled `.jar` files.</li>
+                                                    <li>Running automated compile-time error checks and diagnostic self-healing loops.</li>
+                                                    <li>Enforcing daily and monthly generation limits based on your subscription tier (Stone, Iron, Diamond).</li>
+                                                    <li>Preventing service abuse, malicious code injection, and denial-of-service attempts.</li>
+                                                </ul>
+                                            </section>
+
+                                            <section>
+                                                <h4 className="text-sm font-semibold text-[#f4f4f5] mb-2">3. Data Sharing & Third Parties</h4>
+                                                <p className="text-xs text-[#a1a1aa]">
+                                                    We do not sell, rent, or trade your personal data or prompt inputs. We only share necessary operational data with trusted infrastructure partners: cloud hosting providers (for server execution), AI language model API providers (strictly for processing prompts without training on private data), and Stripe (for secure billing).
+                                                </p>
+                                            </section>
+
+                                            <section>
+                                                <h4 className="text-sm font-semibold text-[#f4f4f5] mb-2">4. Retention & Your Rights</h4>
+                                                <p className="text-xs text-[#a1a1aa]">
+                                                    Project histories and generated code are stored while your account remains active. You hold full rights to access, export, or request permanent deletion of your account and associated prompt history at any time by reaching out on our Discord server or via email.
+                                                </p>
+                                            </section>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <section className="bg-[#26282B]/60 p-4 rounded-lg border border-[#3A3D42]">
+                                                <h4 className="text-xs font-mono uppercase tracking-wider text-[#f4f4f5] font-semibold mb-1">Plain English Summary</h4>
+                                                <p className="text-xs text-[#a1a1aa]">
+                                                    You own 100% of all plugin code you generate. Don't use PluginForge to build malicious plugins or force-op exploits. Test all generated `.jar` files on a test server before deploying to live players.
+                                                </p>
+                                            </section>
+
+                                            <section>
+                                                <h4 className="text-sm font-semibold text-[#f4f4f5] mb-2">1. 100% Intellectual Property Ownership</h4>
+                                                <p className="text-xs text-[#a1a1aa]">
+                                                    You retain <span className="text-[#f4f4f5] font-semibold">complete, unrestricted ownership</span> of all Java source files, config files, `paper-plugin.yml` manifests, and compiled `.jar` binaries produced through your prompts. PluginForge claims zero royalties, licensing rights, or ownership over your plugins. You are free to monetize, distribute, sell, or open-source them without restriction.
+                                                </p>
+                                            </section>
+
+                                            <section>
+                                                <h4 className="text-sm font-semibold text-[#f4f4f5] mb-2">2. Acceptable Use Policy</h4>
+                                                <p className="text-xs text-[#a1a1aa] mb-2">You agree not to use PluginForge to attempt to generate or distribute:</p>
+                                                <ul className="list-disc pl-5 space-y-1 text-xs text-[#a1a1aa]">
+                                                    <li>Malicious backdoors, force-op commands, trojans, or remote access tools targeting Minecraft servers.</li>
+                                                    <li>Plugins specifically engineered to crash servers, exploit memory leaks, or bypass server security permissions.</li>
+                                                    <li>Automated bot traffic or scrapers designed to bypass rate limits or compromise system stability.</li>
+                                                </ul>
+                                            </section>
+
+                                            <section>
+                                                <h4 className="text-sm font-semibold text-[#f4f4f5] mb-2">3. Subscriptions & Tier Allowances</h4>
+                                                <p className="text-xs text-[#a1a1aa]">
+                                                    Generations are governed by your active tier (Stone: 5/day, Iron: 250/mo, Diamond: 1000/mo). Unused monthly allowances do not roll over. Subscriptions auto-renew until cancelled in your billing portal. Refunds are handled in accordance with our fair-use policy upon request within 7 days of purchase.
+                                                </p>
+                                            </section>
+
+                                            <section>
+                                                <h4 className="text-sm font-semibold text-[#f4f4f5] mb-2">4. Disclaimers & Safety Advisory</h4>
+                                                <p className="text-xs text-[#a1a1aa]">
+                                                    PluginForge provides generated files on an <span className="text-[#f4f4f5] font-semibold">"AS IS"</span> basis. While automated compile checks ensure code validity, server owners are responsible for testing generated plugins on a staging server before running them on production servers with real players. PluginForge is not affiliated with Mojang Studios, Microsoft, or PaperMC.
+                                                </p>
+                                            </section>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="p-4 border-t border-[#3A3D42] bg-[#26282B] flex items-center justify-between shrink-0">
+                                    <span className="text-xs text-[#71717a]">
+                                        Need help? Join our <a href="https://discord.gg/tBYx3QkwhH" target="_blank" rel="noopener noreferrer" className="text-[#f4f4f5] underline hover:text-[#a1a1aa]">Discord Community</a>
+                                    </span>
+                                    <button 
+                                        onClick={() => setActiveLegalModal(null)}
+                                        className="bg-[#2C2E31] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-semibold px-5 py-2 rounded transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
