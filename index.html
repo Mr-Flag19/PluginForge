@@ -76,7 +76,6 @@
         const [displayedPrompt, setDisplayedPrompt] = React.useState('');
         const [openFaq, setOpenFaq] = React.useState(null);
         const [mousePos, setMousePos] = React.useState({ x: 50, y: 30 });
-        const [isAnnual, setIsAnnual] = React.useState(false);
         const [activeLegalModal, setActiveLegalModal] = React.useState(null); // 'privacy' | 'terms' | null
 
         // Prevent background page scrolling when a modal is open
@@ -176,7 +175,6 @@
                             <a href="#overview" className="hover:text-[#f4f4f5] transition-colors">Overview</a>
                             <a href="#built-for" className="hover:text-[#f4f4f5] transition-colors">Built For</a>
                             <a href="#examples" className="hover:text-[#f4f4f5] transition-colors">Examples</a>
-                            <a href="#pricing" className="hover:text-[#f4f4f5] transition-colors">Pricing</a>
                             <a href="#faq" className="hover:text-[#f4f4f5] transition-colors">FAQ</a>
                         </nav>
                         <a href="projects/" className="bg-[#2C2E31] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-medium px-3.5 py-1.5 rounded transition-colors">
@@ -429,116 +427,6 @@
                                             </span>
                                         </div>
                                         <p className="text-xs text-[#a1a1aa] mt-0.5">Readable Java source files, listeners, commands, config.yml, and paper-plugin.yml</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Pricing */}
-                    <section id="pricing" className="py-20 px-6 border-t border-[#3A3D42]">
-                        <div className="max-w-5xl mx-auto">
-                            <h2 className="text-2xl font-semibold tracking-tight text-[#f4f4f5] mb-4 text-center">
-                                Pricing Tiers
-                            </h2>
-
-                            {/* Monthly / Annual Billing Toggle */}
-                            <div className="flex items-center justify-center gap-3 mb-12">
-                                <span className={`text-xs font-medium transition-colors ${!isAnnual ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]'}`}>
-                                    Monthly
-                                </span>
-                                <button
-                                    onClick={() => setIsAnnual(!isAnnual)}
-                                    className="w-12 h-6 bg-[#2C2E31] border border-[#3A3D42] rounded-full p-0.5 relative transition-colors focus:outline-none"
-                                    aria-label="Toggle billing cycle"
-                                >
-                                    <div className={`w-4 h-4 bg-[#f4f4f5] rounded-full transition-transform duration-200 ease-in-out ${isAnnual ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                                </button>
-                                <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-medium transition-colors ${isAnnual ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]'}`}>
-                                        Annual
-                                    </span>
-                                    <span className="text-[10px] font-mono text-[#26282B] bg-[#f4f4f5] font-bold px-2 py-0.5 rounded-full">
-                                        Save 20%
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto items-stretch">
-                                <div className="bg-[#2C2E31] border border-[#3A3D42] rounded-lg p-6 flex flex-col justify-between">
-                                    <div>
-                                        <div className="text-sm font-medium text-[#f4f4f5]">Stone Tier</div>
-                                        <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">$0</div>
-                                        <ul className="mt-6 space-y-3 text-xs text-[#a1a1aa] border-t border-[#3A3D42] pt-4">
-                                            <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 5 plugin generations/day</li>
-                                            <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Compiled .jar download</li>
-                                            <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Automated error self-healing</li>
-                                        </ul>
-                                    </div>
-                                    <div className="mt-6 pt-4">
-                                        <a href="projects/" className="w-full block text-center bg-[#282A2D] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-semibold py-2 rounded transition-colors">
-                                            Get Started
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div className="bg-[#2C2E31] border border-[#f4f4f5]/40 rounded-lg p-7 sm:py-8 sm:px-7 flex flex-col justify-between relative md:-my-3 md:py-9">
-                                    <div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-semibold text-[#f4f4f5]">Iron Tier</span>
-                                            <span className="text-[10px] font-mono text-[#26282B] bg-[#f4f4f5] px-2.5 py-0.5 rounded-full font-semibold">Popular</span>
-                                        </div>
-                                        <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">
-                                            {isAnnual ? "$7.99" : "$9.99"}
-                                            <span className="text-xs font-normal text-[#a1a1aa]">/mo</span>
-                                        </div>
-                                        {isAnnual && (
-                                            <div className="text-[11px] text-[#a1a1aa] mt-1 font-mono">Billed annually ($95.88/yr)</div>
-                                        )}
-
-                                        <div className="mt-6 border-t border-[#3A3D42] pt-4">
-                                            <p className="text-[11px] text-[#e4e4e7] font-medium mb-3">
-                                                Everything in Stone Tier, plus:
-                                            </p>
-                                            <ul className="space-y-3 text-xs text-[#a1a1aa]">
-                                                <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 250 generations/mo</li>
-                                                <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Full Java source code access</li>
-                                                <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Compile checking</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div className="mt-6 pt-4">
-                                        <a href="projects/" className="w-full block text-center bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#26282B] text-xs font-semibold py-2 rounded transition-colors">
-                                            Get Access
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div className="bg-[#2C2E31] border border-[#3A3D42] rounded-lg p-6 flex flex-col justify-between">
-                                    <div>
-                                        <div className="text-sm font-medium text-[#f4f4f5]">Diamond Tier</div>
-                                        <div className="mt-3 text-2xl sm:text-3xl font-semibold text-[#f4f4f5]">
-                                            {isAnnual ? "$15.99" : "$19.99"}
-                                            <span className="text-xs font-normal text-[#a1a1aa]">/mo</span>
-                                        </div>
-                                        {isAnnual && (
-                                            <div className="text-[11px] text-[#a1a1aa] mt-1 font-mono">Billed annually ($191.88/yr)</div>
-                                        )}
-
-                                        <div className="mt-6 border-t border-[#3A3D42] pt-4">
-                                            <p className="text-[11px] text-[#e4e4e7] font-medium mb-3">
-                                                Everything in Iron Tier, plus:
-                                            </p>
-                                            <ul className="space-y-3 text-xs text-[#a1a1aa]">
-                                                <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> 1000 generations/mo</li>
-                                                <li className="flex items-center gap-2"><span className="text-[#f4f4f5] font-mono">•</span> Project storage & history</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div className="mt-6 pt-4">
-                                        <a href="projects/" className="w-full block text-center bg-[#282A2D] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-xs font-semibold py-2 rounded transition-colors">
-                                            Get Access
-                                        </a>
                                     </div>
                                 </div>
                             </div>
