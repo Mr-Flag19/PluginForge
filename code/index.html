@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Projects — PluginForge</title>
+<title>PluginForge</title>
 <meta name="description" content="Your PluginForge chats and generated plugins.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233A3D42'/%3E%3Cpath d='M11 11l5 5-5 5m7 0h4' fill='none' stroke='%23f4f4f5' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -78,7 +78,8 @@
         cube: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
         code: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4",
         lock: "M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z",
-        back: "M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+        back: "M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18",
+        signout: "M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
     };
 
     function Icon({ d, className = "w-4 h-4", sw = 2 }) {
@@ -97,7 +98,7 @@
         );
     }
 
-    const NOT_CONNECTED = "Generation isn't connected yet, so I can't build this plugin right now. This screen is a preview of the chat. Your message stays in this window and isn't sent anywhere.";
+    const NOT_CONNECTED = "Plugin generation isn't connected yet, so I can't build this plugin right now. Your message is saved to this project, so it will be here when building goes live.";
 
     const SUGGESTIONS = [
         { title: "Prison mine", text: "Create a prison mine plugin with rank progression and automated resets." },
@@ -106,105 +107,23 @@
         { title: "RPG classes", text: "Build an RPG class selector with mana regeneration, custom spells, and cooldowns." }
     ];
 
-    const CHAT_GROUPS = ["Today", "Yesterday", "Previous 7 days"];
+    const CHAT_GROUPS = ["Today", "Yesterday", "Previous 7 days", "Older"];
 
-    const SEED_CHATS = [
-        {
-            id: "9b254kthkpvjw22a",
-            title: "Prison mine with rank progression",
-            group: "Today",
-            messages: [
-                { role: "user", text: "Create a prison mine plugin with rank progression and automated resets." },
-                {
-                    role: "assistant",
-                    text: "I built PrisonCore for Paper 1.21.x. It compiled cleanly on the first pass, and here is what it does:",
-                    points: [
-                        "Mines reset every 10 minutes, with a 30 second warning in chat.",
-                        "Ranks run A to Z, and each rankup price is charged through Vault.",
-                        "Block multipliers per rank live in config.yml, so you can tune them without recompiling."
-                    ],
-                    commands: ["/mine", "/rankup", "/ranks", "/prisonreload"],
-                    files: [
-                        { name: "PrisonCore.jar", size: "248 KB", desc: "Compiled Paper plugin binary ready for your plugins folder" },
-                        { name: "Source code (zip)", size: "", desc: "Readable Java source files, listeners, commands, config.yml, and paper-plugin.yml", locked: true }
-                    ],
-                    after: "Drop the jar into your server's /plugins folder and restart. Want me to add prestiges or a sell wand next?"
-                }
-            ]
-        },
-        {
-            id: "01hq9xohsdg04hjq",
-            title: "Lifesteal hearts and revive beacons",
-            group: "Today",
-            messages: [
-                { role: "user", text: "Build a custom lifesteal system with heart crafting recipes and revive beacons." },
-                {
-                    role: "assistant",
-                    text: "Lifesteal is ready. Players gain a heart per kill, lose one per death, and get banned at zero until a teammate uses a revive beacon.",
-                    files: [{ name: "Lifesteal.jar", size: "164 KB", desc: "Heart items, crafting recipes, and revive beacon logic" }]
-                }
-            ]
-        },
-        {
-            id: "ze17wsw2unzb1vei",
-            title: "Land claims with trust levels",
-            group: "Yesterday",
-            messages: [
-                { role: "user", text: "Create a claims plugin with trust levels, sub-claims, and clean chat notifications." },
-                {
-                    role: "assistant",
-                    text: "Claims support three trust levels (visitor, member, manager) and sub-claims inside larger plots. Entry and exit messages use action bar text so chat stays clean.",
-                    files: [{ name: "LandClaims.jar", size: "131 KB", desc: "Claim borders, trust flags, and sub-claim management" }]
-                }
-            ]
-        },
-        {
-            id: "a3zt3myz1sohhuzv",
-            title: "RPG classes with mana and spells",
-            group: "Yesterday",
-            messages: [
-                { role: "user", text: "Build an RPG class selector with mana regeneration, custom spells, and cooldowns." },
-                {
-                    role: "assistant",
-                    text: "Three starter classes are in: Warrior, Mage, and Ranger. Each has its own mana pool, regeneration rate, and two spells with cooldowns shown on the action bar.",
-                    files: [{ name: "RpgClasses.jar", size: "207 KB", desc: "Class selector GUI, mana system, and spell cooldowns" }]
-                }
-            ]
-        },
-        {
-            id: "gsfl3eudliny43oq",
-            title: "Guild territory wars and shared bank",
-            group: "Previous 7 days",
-            messages: [
-                { role: "user", text: "Generate a guild/clan system with territory wars, shared bank, and chat channels." },
-                {
-                    role: "assistant",
-                    text: "Guilds come with a shared bank, a private chat channel, and scheduled territory wars that start with a countdown.",
-                    files: [{ name: "Guilds.jar", size: "182 KB", desc: "Territory claims, clan chat channels, and bank integration" }]
-                }
-            ]
-        },
-        {
-            id: "mbqmk2ne6zg8ngig",
-            title: "Vault economy with player shops",
-            group: "Previous 7 days",
-            messages: [
-                { role: "user", text: "Design an automated economy plugin with player shops and Vault integration." },
-                {
-                    role: "assistant",
-                    text: "Economy registers as a Vault provider, so any plugin that uses Vault can charge players. Player shops are chest-based and sell through signs.",
-                    files: [{ name: "Economy.jar", size: "115 KB", desc: "Vault API provider with player trading and physical currency" }]
-                }
-            ]
-        }
-    ];
+    function groupFor(ms) {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const day = 24 * 60 * 60 * 1000;
+        const today = startOfToday.getTime();
+        if (ms >= today) return "Today";
+        if (ms >= today - day) return "Yesterday";
+        if (ms >= today - 7 * day) return "Previous 7 days";
+        return "Older";
+    }
 
     const ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
     const ID_FROM_PATH = /\/([a-z0-9]{16})\/?$/;
-    const STORAGE_KEY = 'pluginforge.chats.v1';
 
-    // 16 random characters (a-z, 0-9) from the browser's secure random source.
-    // Bytes of 252 or higher are skipped so every character is equally likely.
+    // Placeholder ID shown for a moment until the server assigns the real one
     function newProjectId() {
         let id = '';
         while (id.length < 16) {
@@ -222,7 +141,7 @@
         return m ? m[1] : null;
     }
 
-    // The folder this page lives in, e.g. /projects/ (works for any folder name)
+    // The folder this page lives in, e.g. /code/ (works for any folder name)
     function getBasePath() {
         const path = window.location.pathname.replace(/\/index\.html$/, '').replace(/\/[a-z0-9]{16}\/?$/, '').replace(/\/+$/, '');
         return path + '/';
@@ -237,15 +156,101 @@
         } catch (e) {}
     }
 
-    function loadChats() {
+    // ---- Talking to the server (/api/projects). Your Discord sign-in cookie is sent automatically. ----
+    async function api(path, method, body) {
         try {
-            const raw = window.localStorage.getItem(STORAGE_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) return parsed;
-            }
-        } catch (e) {}
-        return SEED_CHATS;
+            const r = await fetch('/api/projects' + path, {
+                method,
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'x-pf-request': '1' },
+                body: body ? JSON.stringify(body) : undefined
+            });
+            let data = null;
+            try { data = await r.json(); } catch (e) {}
+            return { ok: r.ok, status: r.status, data };
+        } catch (e) {
+            return { ok: false, status: 0, data: null };
+        }
+    }
+
+    const plainMessages = (msgs) => msgs.map((m) => ({ role: m.role, text: m.text || '' }));
+
+    const initialsOf = (name) => (String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w.charAt(0)).join('') || '?').toUpperCase();
+
+    function DiscordMark() {
+        return (
+            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.011c3.927 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+            </svg>
+        );
+    }
+
+    // Discord profile picture, with initials if there is none or it fails to load
+    function Avatar({ user }) {
+        const [failed, setFailed] = React.useState(false);
+        if (user.avatar && !failed) {
+            return <img src={user.avatar} alt="" onError={() => setFailed(true)} className="w-9 h-9 rounded-md shrink-0 bg-[#3A3D42] border border-[#4b4f56] object-cover" />;
+        }
+        return (
+            <div className="w-9 h-9 rounded-md bg-[#3A3D42] border border-[#4b4f56] flex items-center justify-center text-sm font-semibold text-[#f4f4f5] shrink-0" aria-hidden="true">{initialsOf(user.name)}</div>
+        );
+    }
+
+    function LoadingScreen() {
+        return (
+            <div className="h-full flex items-center justify-center bg-[#26282B]" role="status" aria-label="Loading">
+                <div className="animate-pulse"><LogoMark className="w-10 h-10" /></div>
+            </div>
+        );
+    }
+
+    function SignInScreen({ message, unavailable }) {
+        const next = encodeURIComponent(window.location.pathname);
+        return (
+            <div className="min-h-full h-full relative flex flex-col bg-[#26282B] text-[#f4f4f5] font-sans overflow-y-auto">
+                <div className="fixed inset-0 bg-grid-pattern opacity-30 pointer-events-none"></div>
+                <header className="relative z-10 py-5 px-6 sm:px-8 border-b border-[#3A3D42] bg-[#26282B]/90 backdrop-blur-md">
+                    <div className="max-w-6xl mx-auto flex items-center justify-between">
+                        <a href="/" className="flex items-center gap-2.5">
+                            <LogoMark />
+                            <span className="font-bold tracking-tight text-base">PluginForge</span>
+                        </a>
+                        <a href="/" className="text-[#a1a1aa] hover:text-[#f4f4f5] text-xs flex items-center gap-1.5 transition-colors">
+                            <Icon d={ICONS.back} className="w-3.5 h-3.5" />
+                            Back to site
+                        </a>
+                    </div>
+                </header>
+                <main className="relative z-10 flex-1 flex items-center justify-center px-6 py-12">
+                    <div className="w-full max-w-md text-center">
+                        <div className="flex justify-center"><LogoMark className="w-10 h-10" /></div>
+                        <h1 className="mt-6 text-2xl sm:text-3xl font-bold tracking-tight">Sign in to start building</h1>
+                        <p className="mt-3 text-xs sm:text-sm text-[#a1a1aa] leading-relaxed">
+                            Your projects are saved to your Discord account, so you can pick them up on any device.
+                        </p>
+                        <div className="mt-8 bg-[#2C2E31] border border-[#3A3D42] rounded-2xl p-3 shadow-xl">
+                            {unavailable ? (
+                                <div role="alert" className="px-3 py-4 text-sm text-[#a1a1aa] leading-relaxed">
+                                    Sign in isn't available right now. Please try again later.
+                                </div>
+                            ) : (
+                                <a
+                                    href={'/api/auth/login?next=' + next}
+                                    className="w-full flex items-center justify-center gap-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+                                >
+                                    <DiscordMark />
+                                    Continue with Discord
+                                </a>
+                            )}
+                        </div>
+                        <p role="alert" className="mt-4 min-h-[1rem] text-xs text-[#a1a1aa] leading-relaxed">{message}</p>
+                        <p className="mt-6 text-[11px] text-[#71717a] leading-relaxed">
+                            PluginForge only reads your Discord username, display name, profile picture and account ID. It never sees your password.
+                        </p>
+                    </div>
+                </main>
+            </div>
+        );
     }
 
     function FileRow({ f }) {
@@ -472,28 +477,51 @@
         );
     }
 
-    function ChatApp({ chats, setChats, activeId, setActiveId }) {
+    function ChatApp({ user, chats, setChats, activeId, setActiveId, loadingProject, onSignOut, onSessionExpired }) {
         const [sidebarOpen, setSidebarOpen] = React.useState(false);
         const [query, setQuery] = React.useState('');
         const [draft, setDraft] = React.useState('');
         const [pendingId, setPendingId] = React.useState(null);
         const [showPricing, setShowPricing] = React.useState(() => window.location.hash === '#pricing');
         const [copied, setCopied] = React.useState(false);
+        const [notice, setNotice] = React.useState('');
         const endRef = React.useRef(null);
         const taRef = React.useRef(null);
 
         const active = chats.find((c) => c.id === activeId) || null;
         const urlId = getIdFromPath();
-        const missingId = !active && urlId && !chats.some((c) => c.id === urlId) ? urlId : null;
-        const messages = active ? active.messages : [];
+        const missingId = !active && !loadingProject && urlId && !chats.some((c) => c.id === urlId) ? urlId : null;
+        const messages = active && active.messages ? active.messages : [];
         const isPending = pendingId !== null && pendingId === activeId;
+        const needle = query.trim().toLowerCase();
 
         const groups = CHAT_GROUPS
             .map((g) => ({
                 name: g,
-                items: chats.filter((c) => c.group === g && c.title.toLowerCase().includes(query.trim().toLowerCase()))
+                items: chats
+                    .filter((c) => groupFor(c.updatedAt || Date.now()) === g && c.title.toLowerCase().includes(needle))
+                    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
             }))
             .filter((g) => g.items.length > 0);
+
+        // The sidebar list only has titles, so fetch the conversation when a project is opened
+        const needsMessages = Boolean(active) && !active.messages && !active.loadFailed;
+        React.useEffect(() => {
+            if (!needsMessages) return;
+            let cancelled = false;
+            const id = active.id;
+            api('/' + id, 'GET').then((res) => {
+                if (cancelled) return;
+                if (res.ok && res.data && Array.isArray(res.data.messages)) {
+                    setChats((prev) => prev.map((c) => (c.id === id ? { ...c, messages: res.data.messages } : c)));
+                } else if (res.status === 401) {
+                    onSessionExpired();
+                } else {
+                    setChats((prev) => prev.map((c) => (c.id === id ? { ...c, messages: [], loadFailed: true } : c)));
+                }
+            });
+            return () => { cancelled = true; };
+        }, [activeId, needsMessages]);
 
         React.useEffect(() => {
             if (endRef.current) endRef.current.scrollIntoView({ block: 'end' });
@@ -507,19 +535,28 @@
         }, [draft]);
 
         const selectChat = (id) => {
+            setNotice('');
             setActiveId(id);
             navigateTo(id);
             setSidebarOpen(false);
         };
 
         const newChat = () => {
+            setNotice('');
             setActiveId(null);
             navigateTo(null);
             setSidebarOpen(false);
             if (taRef.current) taRef.current.focus();
         };
 
-        const deleteChat = (id) => {
+        const deleteChat = async (id) => {
+            setNotice('');
+            const res = await api('/' + id, 'DELETE');
+            if (res.status === 401) return onSessionExpired();
+            if (!res.ok && res.status !== 404) {
+                setNotice("Couldn't delete this project. Check your connection and try again.");
+                return;
+            }
             setChats((prev) => prev.filter((c) => c.id !== id));
             if (activeId === id) {
                 setActiveId(null);
@@ -527,25 +564,56 @@
             }
         };
 
-        const send = () => {
+        const send = async () => {
             const text = draft.trim();
             if (!text || pendingId) return;
             const userMsg = { role: 'user', text };
-            let id = activeId;
-            if (!active) {
-                id = newProjectId();
-                const title = text.length > 44 ? text.slice(0, 44).trimEnd() + '…' : text;
-                setChats((prev) => [{ id, title, group: 'Today', messages: [userMsg] }, ...prev]);
-                setActiveId(id);
-                navigateTo(id);
-            } else {
-                setChats((prev) => prev.map((c) => (c.id === id ? { ...c, messages: [...c.messages, userMsg] } : c)));
-            }
+            setNotice('');
             setDraft('');
-            setPendingId(id);
-            setTimeout(() => {
-                setChats((prev) => prev.map((c) => (c.id === id ? { ...c, messages: [...c.messages, { role: 'assistant', text: NOT_CONNECTED }] } : c)));
+
+            let id = activeId;
+            const title = active ? active.title : (text.length > 44 ? text.slice(0, 44).trimEnd() + '…' : text);
+            let msgs;
+
+            if (!active) {
+                // Show the chat straight away, then swap in the ID the server assigns
+                const tempId = newProjectId();
+                id = tempId;
+                msgs = [userMsg];
+                setChats((prev) => [{ id: tempId, title, updatedAt: Date.now(), messages: msgs }, ...prev]);
+                setActiveId(tempId);
+                navigateTo(tempId);
+                setPendingId(tempId);
+                const created = await api('', 'POST', { title, messages: plainMessages(msgs) });
+                if (!created.ok) {
+                    // Nothing was saved, so take the chat back out and give the message back
+                    setChats((prev) => prev.filter((c) => c.id !== tempId));
+                    setActiveId(null);
+                    navigateTo(null, true);
+                    setPendingId(null);
+                    setDraft(text);
+                    if (created.status === 401) return onSessionExpired();
+                    setNotice((created.data && created.data.error) || "Couldn't save your project. Check your connection and try again. Your message is still in the box.");
+                    return;
+                }
+                id = created.data.id;
+                setChats((prev) => prev.map((c) => (c.id === tempId ? { ...c, id } : c)));
+                setActiveId(id);
+                navigateTo(id, true);
+                setPendingId(id);
+            } else {
+                msgs = [...active.messages, userMsg];
+                setChats((prev) => prev.map((c) => (c.id === id ? { ...c, messages: msgs, updatedAt: Date.now() } : c)));
+                setPendingId(id);
+            }
+
+            setTimeout(async () => {
+                const reply = { role: 'assistant', text: NOT_CONNECTED };
+                setChats((prev) => prev.map((c) => (c.id === id ? { ...c, messages: [...c.messages, reply], updatedAt: Date.now() } : c)));
                 setPendingId(null);
+                const saved = await api('/' + id, 'PUT', { title, messages: plainMessages([...msgs, reply]) });
+                if (saved.status === 401) return onSessionExpired();
+                if (!saved.ok) setNotice("Couldn't save the latest reply to your project.");
             }, 1100);
         };
 
@@ -620,7 +688,7 @@
 
                     <nav className="flex-1 min-h-0 overflow-y-auto px-3 pt-5 pb-3 space-y-5" aria-label="Chats">
                         {groups.length === 0 && (
-                            <p className="px-2 text-xs text-[#71717a]">No chats match your search.</p>
+                            <p className="px-2 text-xs text-[#71717a] leading-relaxed">{chats.length === 0 ? "No chats yet. Describe a plugin to start your first one." : "No chats match your search."}</p>
                         )}
                         {groups.map((g) => (
                             <div key={g.name}>
@@ -652,23 +720,29 @@
                     <div className="border-t border-[#3A3D42] p-3 space-y-3">
                         <div>
                             <div className="flex items-center justify-between text-[11px] font-mono text-[#71717a] mb-1.5">
-                                <span>Generations today</span>
-                                <span className="text-[#a1a1aa]">5 / 5 left</span>
+                                <span>Stone Tier</span>
+                                <span className="text-[#a1a1aa]">5 / 5 generations today</span>
                             </div>
                             <div className="h-1 rounded-full bg-[#3A3D42] overflow-hidden">
                                 <div className="h-full w-full bg-[#f4f4f5] rounded-full"></div>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 p-1.5 -m-1.5 rounded-lg">
-                            <div className="w-9 h-9 rounded-md bg-[#3A3D42] border border-[#4b4f56] flex items-center justify-center text-sm font-semibold text-[#f4f4f5] shrink-0" aria-hidden="true">S</div>
+                            <Avatar user={user} />
                             <div className="min-w-0 flex-1">
-                                <div className="text-sm font-medium text-[#f4f4f5] truncate">Steve</div>
-                                <div className="text-[11px] font-mono text-[#71717a]">Stone Tier</div>
+                                <div className="text-sm font-medium text-[#f4f4f5] truncate" title={user.name}>{user.name}</div>
+                                <div className="text-[11px] font-mono text-[#71717a] truncate" title={user.username ? '@' + user.username : ''}>{user.username ? '@' + user.username : 'Discord account'}</div>
                             </div>
-                            <button onClick={() => setShowPricing(true)} className="bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-[11px] font-medium px-2.5 py-1 rounded transition-colors">
+                            <button onClick={() => setShowPricing(true)} className="bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] text-[#f4f4f5] text-[11px] font-medium px-2.5 py-1 rounded transition-colors shrink-0">
                                 Upgrade
                             </button>
+                            <button onClick={onSignOut} className="text-[#a1a1aa] hover:text-[#f4f4f5] p-1.5 rounded-md border border-[#3A3D42] bg-[#26282B] transition-colors shrink-0" aria-label="Sign out" title="Sign out">
+                                <Icon d={ICONS.signout} className="w-3.5 h-3.5" />
+                            </button>
                         </div>
+                        {user.admin && (
+                            <a href="/admin/" className="block text-center text-[11px] font-mono text-[#a1a1aa] hover:text-[#f4f4f5] bg-[#26282B] border border-[#3A3D42] rounded-md py-1.5 transition-colors">Admin panel</a>
+                        )}
                     </div>
                 </aside>
 
@@ -749,6 +823,12 @@
                                             : <AssistantMessage key={i} m={m} />
                                     )}
                                     {isPending && <TypingIndicator />}
+                                    {active && !active.messages && (
+                                        <p role="status" className="text-xs text-[#71717a]">Loading project…</p>
+                                    )}
+                                    {active && active.loadFailed && (
+                                        <p role="alert" className="text-xs text-[#a1a1aa]">Couldn't load this project. Check your connection and open it again.</p>
+                                    )}
                                 </div>
                             )}
                             <div ref={endRef}></div>
@@ -760,6 +840,9 @@
                         className="relative z-10 px-4 sm:px-6 pt-2 pb-4 shrink-0"
                     >
                         <div className="max-w-3xl mx-auto">
+                            {notice && (
+                                <div role="alert" className="mb-2.5 bg-[#2C2E31] border border-[#3A3D42] rounded-lg px-3.5 py-2.5 text-xs text-[#a1a1aa] leading-relaxed">{notice}</div>
+                            )}
                             <div className="bg-[#2C2E31] border border-[#3A3D42] rounded-2xl p-3 shadow-xl">
                                 <div className="bg-[#26282B] border border-[#3A3D42] focus-within:border-[#71717a] rounded-xl p-2 transition-all">
                                     <textarea
@@ -798,30 +881,96 @@
 
 
     function App() {
-        const [chats, setChats] = React.useState(loadChats);
-        const [activeId, setActiveId] = React.useState(() => {
-            const id = getIdFromPath();
-            return id && loadChats().some((c) => c.id === id) ? id : null;
-        });
+        const [auth, setAuth] = React.useState({ status: 'loading' }); // loading | signedOut | unavailable | signedIn
+        const [user, setUser] = React.useState(null);
+        const [chats, setChats] = React.useState([]);
+        const [activeId, setActiveId] = React.useState(null);
+        const [loadingProject, setLoadingProject] = React.useState(true);
         const chatsRef = React.useRef(chats);
         chatsRef.current = chats;
 
-        // Keep chats in this browser until a real backend stores them
-        React.useEffect(() => {
-            try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chats)); } catch (e) {}
-        }, [chats]);
+        const loginMessage = (code) => {
+            if (code === 'cancelled') return 'Sign in was cancelled.';
+            if (code === 'failed') return "Sign in didn't work. Please try again.";
+            return '';
+        };
 
-        // Browser back and forward buttons
-        React.useEffect(() => {
-            const onPop = () => {
-                const id = getIdFromPath();
-                setActiveId(id && chatsRef.current.some((c) => c.id === id) ? id : null);
-            };
-            window.addEventListener('popstate', onPop);
-            return () => window.removeEventListener('popstate', onPop);
+        // Open the project named in the address, fetching it if it is not in the sidebar list
+        const openFromUrl = React.useCallback(async () => {
+            const id = getIdFromPath();
+            if (!id) { setActiveId(null); setLoadingProject(false); return; }
+            if (chatsRef.current.some((c) => c.id === id)) { setActiveId(id); setLoadingProject(false); return; }
+            setLoadingProject(true);
+            const res = await api('/' + id, 'GET');
+            if (res.ok && res.data && Array.isArray(res.data.messages)) {
+                const d = res.data;
+                setChats((prev) => prev.some((c) => c.id === id) ? prev : [{ id, title: d.title, updatedAt: d.updatedAt, messages: d.messages }, ...prev]);
+                setActiveId(id);
+            } else {
+                setActiveId(null);
+                if (res.status === 401) setAuth({ status: 'signedOut', message: 'Your session ended. Sign in again.' });
+            }
+            setLoadingProject(false);
         }, []);
 
-        return <ChatApp chats={chats} setChats={setChats} activeId={activeId} setActiveId={setActiveId} />;
+        React.useEffect(() => {
+            let alive = true;
+            (async () => {
+                const q = new URLSearchParams(window.location.search);
+                const code = q.get('error');
+                if (window.location.search) { try { window.history.replaceState({}, '', window.location.pathname); } catch (e) {} }
+
+                let me = null;
+                try { me = await fetch('/api/auth/me', { credentials: 'same-origin' }); } catch (e) {}
+                if (!alive) return;
+                if (me && me.ok) {
+                    const u = await me.json();
+                    const list = await api('', 'GET');
+                    if (!alive) return;
+                    setUser(u);
+                    setChats(list.ok && list.data && Array.isArray(list.data.projects) ? list.data.projects : []);
+                    setAuth({ status: 'signedIn' });
+                    openFromUrl();
+                } else if (code === 'setup' || (me && me.status === 503)) {
+                    setAuth({ status: 'unavailable' });
+                } else {
+                    setAuth({ status: 'signedOut', message: loginMessage(code) });
+                }
+            })();
+            const onPop = () => { if (chatsRef.current) openFromUrl(); };
+            window.addEventListener('popstate', onPop);
+            return () => { alive = false; window.removeEventListener('popstate', onPop); };
+        }, []);
+
+        const onSessionExpired = React.useCallback(() => {
+            setAuth({ status: 'signedOut', message: 'Your session ended. Sign in again.' });
+            setChats([]);
+            setActiveId(null);
+        }, []);
+
+        const onSignOut = async () => {
+            try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', headers: { 'x-pf-request': '1' } }); } catch (e) {}
+            // Switch screens first. This React setup renders after every change, so clearing the user first would crash the chat.
+            setAuth({ status: 'signedOut', message: 'You have been signed out.' });
+            setChats([]);
+            setActiveId(null);
+            navigateTo(null, true);
+        };
+
+        if (auth.status === 'loading') return <LoadingScreen />;
+        if (auth.status !== 'signedIn') return <SignInScreen unavailable={auth.status === 'unavailable'} message={auth.message || ''} />;
+        return (
+            <ChatApp
+                user={user}
+                chats={chats}
+                setChats={setChats}
+                activeId={activeId}
+                setActiveId={setActiveId}
+                loadingProject={loadingProject}
+                onSignOut={onSignOut}
+                onSessionExpired={onSessionExpired}
+            />
+        );
     }
 
     ReactDOM.render(<App />, document.getElementById('root'));
