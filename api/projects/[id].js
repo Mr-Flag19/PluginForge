@@ -1,5 +1,5 @@
 // GET / PUT / DELETE /api/projects/<id>  (only the account that created the project)
-const { ID_RE, INDEX_KEY, configured, redis, key, userIndexKey, getProject, cleanBody, send, sessionUser, missingHeader, addUsage, getUsage, countPrompts } = require('../_lib');
+const { ID_RE, INDEX_KEY, configured, redis, key, userIndexKey, getProject, cleanBody, send, sessionUser, missingHeader, addUsage, getUsage, countPrompts, stampMessages } = require('../_lib');
 
 module.exports = async (req, res) => {
   const id = String(req.query.id || '');
@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
       const now = Date.now();
       // Only prompts that are new since the last save count, so saving the same chat again costs nothing
       const newPrompts = countPrompts(body.messages) - countPrompts(project.messages);
-      const next = { ...project, title: body.title, messages: body.messages, updatedAt: now };
+      const next = { ...project, title: body.title, messages: stampMessages(body.messages, project.messages, now), updatedAt: now };
       await redis(['SET', key(id), JSON.stringify(next)]);
       await redis(['ZADD', INDEX_KEY, String(now), id]);
       await redis(['ZADD', userIndexKey(user.id), String(now), id]);
