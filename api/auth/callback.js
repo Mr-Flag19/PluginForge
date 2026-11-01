@@ -53,6 +53,8 @@ module.exports = async (req, res) => {
       name: String(me.global_name || me.username || 'Player').slice(0, 80),
       username: String(me.username || '').slice(0, 40),
       avatar: /^[a-z0-9_]{1,64}$/.test(String(me.avatar || '')) ? String(me.avatar) : '',
+      // Only present because the sign in asks Discord for the email scope. Shown to the person on their own profile.
+      email: typeof me.email === 'string' ? me.email.slice(0, 254) : '',
     };
     const session = signSession({ ...user, p: 'discord', exp: Math.floor(Date.now() / 1000) + SESSION_SECONDS });
     return go(res, next, [...clear, cookie(SESSION_COOKIE, session, SESSION_SECONDS)]);
