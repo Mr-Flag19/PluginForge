@@ -1,5 +1,5 @@
-// GET / PUT / DELETE /api/projects/<id>  (only the Discord account that created the project)
-const { ID_RE, INDEX_KEY, configured, redis, key, userIndexKey, getProject, cleanBody, send, sessionUser, missingHeader } = require('../_lib');
+// GET / PUT / DELETE /api/projects/<id>  (only the account that created the project)
+const { ID_RE, INDEX_KEY, configured, redis, key, userIndexKey, getProject, cleanBody, send, sessionUser, missingHeader, addUsage, getUsage, countPrompts } = require('../_lib');
 
 module.exports = async (req, res) => {
   const id = String(req.query.id || '');
@@ -22,11 +22,18 @@ module.exports = async (req, res) => {
       const body = cleanBody(req.body);
       if (!body) return send(res, 400, { error: 'Invalid project' });
       const now = Date.now();
+      // Only prompts that are new since the last save count, so saving the same chat again costs nothing
+      const newPrompts = countPrompts(body.messages) - countPrompts(project.messages);
       const next = { ...project, title: body.title, messages: body.messages, updatedAt: now };
       await redis(['SET', key(id), JSON.stringify(next)]);
       await redis(['ZADD', INDEX_KEY, String(now), id]);
       await redis(['ZADD', userIndexKey(user.id), String(now), id]);
-      return send(res, 200, { id, updatedAt: now });
+      let usage = null;
+      try {
+        if (newPrompts > 0) await addUsage(user.id, newPrompts);
+        usage = await getUsage(user.id);
+      } catch (e) {}
+      return send(res, 200, { id, updatedAt: now, usage });
     }
 
     if (req.method === 'DELETE') {
