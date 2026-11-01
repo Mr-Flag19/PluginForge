@@ -16,7 +16,7 @@ module.exports = (req, res) => {
     client_id: process.env.DISCORD_CLIENT_ID,
     response_type: 'code',
     redirect_uri: process.env.SITE_URL.replace(/\/+$/, '') + '/api/auth/callback',
-    scope: 'identify',
+    scope: 'identify email',
     state,
   });
   res.setHeader('Set-Cookie', [cookie(STATE_COOKIE, state, 600), cookie(NEXT_COOKIE, encodeURIComponent(next), 600)]);
