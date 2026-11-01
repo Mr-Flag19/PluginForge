@@ -56,7 +56,7 @@
     <!-- Lookup -->
     <section id="panel" hidden>
         <h1 class="text-2xl font-semibold tracking-tight">Project lookup</h1>
-        <p class="mt-2 text-sm text-[#a1a1aa]">Paste a 16 character project ID to see its full conversation.</p>
+        <p class="mt-2 text-sm text-[#a1a1aa]">Paste a 16 character project ID to see the account's plan, generations left and every prompt in the chat.</p>
 
         <form id="lookup-form" class="mt-6 bg-[#2C2E31] border border-[#3A3D42] rounded-2xl p-3 shadow-xl">
             <div class="bg-[#26282B] border border-[#3A3D42] focus-within:border-[#71717a] rounded-xl p-2 flex items-center gap-2 transition-all">
@@ -84,7 +84,17 @@
                 <div class="bg-[#2C2E31] p-4 min-w-0"><dt class="font-mono uppercase tracking-wider text-[#71717a] mb-1">Last updated</dt><dd id="r-updated" class="text-[#f4f4f5]"></dd></div>
                 <div class="bg-[#2C2E31] p-4 min-w-0"><dt class="font-mono uppercase tracking-wider text-[#71717a] mb-1">Account</dt><dd id="r-owner" class="font-mono text-[#f4f4f5] break-all"></dd></div>
             </dl>
-            <div id="r-messages" class="p-5 space-y-4 border-t border-[#3A3D42]"></div>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-px bg-[#3A3D42] text-xs border-t border-[#3A3D42]">
+                <div class="bg-[#2C2E31] p-4 min-w-0"><dt class="font-mono uppercase tracking-wider text-[#71717a] mb-1">Subscription</dt><dd id="r-tier" class="text-[#f4f4f5]"></dd></div>
+                <div class="bg-[#2C2E31] p-4 min-w-0">
+                    <dt class="font-mono uppercase tracking-wider text-[#71717a] mb-1">Generations left</dt>
+                    <dd id="r-left" class="text-[#f4f4f5]"></dd>
+                    <div id="r-bar-wrap" class="mt-2 h-1.5 bg-[#26282B] rounded-full overflow-hidden" hidden><div id="r-bar" class="h-full bg-[#f4f4f5] rounded-full" style="width:0%"></div></div>
+                    <p id="r-reset" class="mt-2 text-[11px] text-[#71717a]"></p>
+                </div>
+            </dl>
+            <div class="px-5 pt-4 border-t border-[#3A3D42] bg-[#26282B] text-[11px] font-mono uppercase tracking-wider text-[#71717a]" id="r-prompt-count"></div>
+            <ol id="r-messages" class="p-5 space-y-3 bg-[#26282B]"></ol>
         </div>
 
         <!-- Recent -->
@@ -194,17 +204,39 @@
         $('r-created').textContent = fmt(p.createdAt);
         $('r-updated').textContent = fmt(p.updatedAt);
         $('r-owner').textContent = (p.ownerName ? p.ownerName + ' · ' : '') + (p.ownerUsername ? '@' + p.ownerUsername + ' · ' : '') + p.ownerId;
+        var acc = p.account;
+        if (acc) {
+            $('r-tier').textContent = acc.tierName;
+            $('r-left').textContent = acc.left + ' of ' + acc.limit + ' left ' + (acc.period === 'day' ? 'today' : 'this month') + ' (' + acc.used + ' used)';
+            $('r-bar').style.width = Math.max(0, Math.min(100, (acc.left / acc.limit) * 100)) + '%';
+            $('r-bar-wrap').hidden = false;
+            $('r-reset').textContent = 'Resets ' + new Date(acc.resetsAt).toUTCString().replace(' GMT', ' UTC');
+        } else {
+            $('r-tier').textContent = 'Unavailable';
+            $('r-left').textContent = 'Unavailable';
+            $('r-bar-wrap').hidden = true;
+            $('r-reset').textContent = '';
+        }
+        var prompts = p.messages.filter(function (m) { return m.role === 'user'; });
+        $('r-prompt-count').textContent = 'Prompts (' + prompts.length + ')';
         var box = $('r-messages');
         box.textContent = '';
-        p.messages.forEach(function (m) {
-            var row = document.createElement('div');
-            var who = document.createElement('div');
-            who.className = 'text-[11px] font-mono uppercase tracking-wider text-[#71717a] mb-1';
-            who.textContent = m.role === 'user' ? 'User' : 'PluginForge';
+        if (!prompts.length) {
+            var empty = document.createElement('li');
+            empty.className = 'text-sm text-[#71717a]';
+            empty.textContent = 'No prompts in this chat.';
+            box.appendChild(empty);
+        }
+        prompts.forEach(function (m, i) {
+            var row = document.createElement('li');
+            row.className = 'flex gap-3';
+            var num = document.createElement('span');
+            num.className = 'text-[11px] font-mono text-[#71717a] pt-0.5 w-6 shrink-0';
+            num.textContent = String(i + 1);
             var body = document.createElement('div');
-            body.className = 'text-sm leading-relaxed whitespace-pre-wrap break-words ' + (m.role === 'user' ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]');
+            body.className = 'text-sm leading-relaxed whitespace-pre-wrap break-words text-[#f4f4f5] min-w-0';
             body.textContent = m.text;
-            row.appendChild(who);
+            row.appendChild(num);
             row.appendChild(body);
             box.appendChild(row);
         });
