@@ -1,5 +1,5 @@
 // Admin only (a signed-in Discord account whose ID is listed in ADMIN_ACCOUNTS)
-//   GET  /api/admin/users?id=<discord id>   the account's plan, prompts left, refill time and project count
+//   GET  /api/admin/users?id=<discord id>   the account's plan, prompts left, refill time and every project it owns
 //   POST /api/admin/users                   change that account. Body: { id, action, ... }
 //        { action: 'tier', tier: 'stone' | 'iron' | 'diamond' }
 //        { action: 'prompts', set: 12 }            set prompts left to exactly 12
@@ -7,7 +7,7 @@
 //        { action: 'refill', now: true }           refill straight away
 //        { action: 'refill', at: 1767225600000 }   refill at that time (ms since 1970, in the future)
 const {
-  ACCOUNT_RE, configured, redis, userIndexKey, getProject, send, authConfigured, sessionUser, isAllowed, missingHeader,
+  ACCOUNT_RE, configured, redis, key, userIndexKey, getProject, send, authConfigured, sessionUser, isAllowed, missingHeader,
   getUsage, setTier, setPromptsLeft, refillNow, setRefillAt,
 } = require('../_lib');
 
@@ -16,16 +16,15 @@ const MAX_AHEAD_MS = 366 * 24 * 60 * 60 * 1000;
 
 async function describe(id) {
   const usage = await getUsage(id);
-  const projectCount = Number(await redis(['ZCARD', userIndexKey(id)])) || 0;
-  let name = '';
-  let username = '';
-  if (projectCount) {
-    // The name and username come from the account's most recent project
-    const latest = await redis(['ZREVRANGE', userIndexKey(id), '0', '0']);
-    const project = latest && latest[0] ? await getProject(latest[0]) : null;
-    if (project) { name = project.ownerName || ''; username = project.ownerUsername || ''; }
-  }
-  return { id, name, username, projectCount, usage };
+  // Every project this account owns, newest first (an account can have at most 200)
+  const ids = (await redis(['ZREVRANGE', userIndexKey(id), '0', '-1'])) || [];
+  const rows = ids.length ? await redis(['MGET', ...ids.map(key)]) : [];
+  const owned = rows.filter(Boolean).map((raw) => JSON.parse(raw)).filter((p) => p.ownerId === id);
+  const projects = owned.map((p) => ({ id: p.id, title: p.title, updatedAt: p.updatedAt }));
+  // The name and username come from the account's most recent project
+  const name = owned.length ? owned[0].ownerName || '' : '';
+  const username = owned.length ? owned[0].ownerUsername || '' : '';
+  return { id, name, username, projectCount: projects.length, projects, usage };
 }
 
 module.exports = async (req, res) => {
