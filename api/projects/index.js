@@ -1,6 +1,6 @@
 // GET  /api/projects  your projects, newest first (titles only)
 // POST /api/projects  creates a project and returns its server-generated ID
-const { INDEX_KEY, MAX_PROJECTS_PER_USER, configured, redis, newId, key, userIndexKey, cleanBody, send, sessionUser, missingHeader, addUsage, getUsage, countPrompts } = require('../_lib');
+const { INDEX_KEY, MAX_PROJECTS_PER_USER, configured, redis, newId, key, userIndexKey, cleanBody, send, sessionUser, missingHeader, addUsage, getUsage, countPrompts, stampMessages } = require('../_lib');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'POST') return send(res, 405, { error: 'Method not allowed' });
@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
       const id = newId();
       const project = {
         id, ownerId: user.id, ownerName: user.name, ownerUsername: user.username || '',
-        title: body.title, messages: body.messages, createdAt: now, updatedAt: now,
+        title: body.title, messages: stampMessages(body.messages, [], now), createdAt: now, updatedAt: now,
       };
       // NX: only store if this ID is not already taken
       const stored = await redis(['SET', key(id), JSON.stringify(project), 'NX']);
