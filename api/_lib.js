@@ -74,6 +74,9 @@ async function getTier(accountId) {
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const windowKey = (accountId) => 'usage:' + accountId + ':window';
 const windowStartKey = (accountId) => 'usage:' + accountId + ':windowstart';
+// An admin can move the refill time of a monthly plan. This holds that time (ms) until it passes.
+const monthResetKey = (accountId) => 'usage:' + accountId + ':monthreset';
+const ttlFor = (ms, now) => String(Math.max(60, Math.ceil((ms - now.getTime()) / 1000)) + 3600);
 
 // The 24 hour window is running if the first prompt of it was made less than 24 hours ago
 async function getWindow(accountId, now) {
@@ -82,25 +85,38 @@ async function getWindow(accountId, now) {
   return null;
 }
 
+// A moved refill time on a monthly plan, or null when there is none or it has passed
+async function getMonthOverride(accountId, now) {
+  const ov = Number(await redis(['GET', monthResetKey(accountId)])) || 0;
+  return ov && now.getTime() < ov ? ov : null;
+}
+
 // What this account has used so far in the current period of its plan.
 // resetsAt is null for a Stone account whose window has not started yet (nothing used since the last refill).
+// An admin can hand out extra prompts, so left can be higher than the limit (bonus).
 async function getUsage(accountId, now = new Date()) {
   const tier = await getTier(accountId);
   const plan = TIERS[tier];
-  let used = 0;
+  let raw = 0;
   let resetsAt = null;
   if (plan.period === 'day') {
     const w = await getWindow(accountId, now);
     if (w) {
-      used = Number(await redis(['GET', windowKey(accountId)])) || 0;
+      raw = Number(await redis(['GET', windowKey(accountId)])) || 0;
       resetsAt = w.resetsAt;
     }
   } else {
     const p = periodInfo(now).month;
-    used = Number(await redis(['GET', usageKey(accountId, 'month', p.label)])) || 0;
-    resetsAt = p.resetsAt;
+    const ov = await getMonthOverride(accountId, now);
+    const stale = !ov && Number(await redis(['GET', monthResetKey(accountId)])) > 0; // the moved time has passed: a refill happened
+    raw = stale ? 0 : Number(await redis(['GET', usageKey(accountId, 'month', p.label)])) || 0;
+    resetsAt = ov || p.resetsAt;
   }
-  return { tier, tierName: plan.name, period: plan.period, limit: plan.limit, used, left: Math.max(0, plan.limit - used), resetsAt };
+  const left = Math.max(0, plan.limit - raw);
+  return {
+    tier, tierName: plan.name, period: plan.period, limit: plan.limit,
+    used: Math.max(0, raw), left, bonus: Math.max(0, left - plan.limit), resetsAt,
+  };
 }
 
 // One generation per prompt. Both counters move, so changing plan never loses history.
@@ -116,8 +132,70 @@ async function addUsage(accountId, count, now = new Date()) {
     await redis(['SET', windowStartKey(accountId), String(now.getTime()), 'EX', ttl]);
   }
   const monthKey = usageKey(accountId, 'month', periodInfo(now).month.label);
+  const ov = await getMonthOverride(accountId, now);
+  const passed = !ov && Number(await redis(['GET', monthResetKey(accountId)])) > 0;
+  if (passed) {
+    // A refill time set by an admin has passed: the count starts again from this prompt
+    await redis(['DEL', monthResetKey(accountId)]);
+    await redis(['SET', monthKey, String(count), 'EX', String(40 * 24 * 3600)]);
+    return;
+  }
   await redis(['INCRBY', monthKey, String(count)]);
   await redis(['EXPIRE', monthKey, String(40 * 24 * 3600)]);
+}
+
+// ---- Admin controls for one account ----
+async function setTier(accountId, tier) {
+  if (!Object.prototype.hasOwnProperty.call(TIERS, tier)) throw new Error('Unknown tier');
+  await redis(['SET', tierKey(accountId), tier]);
+}
+
+// Set how many prompts the account has left right now (it can be more than the plan limit)
+async function setPromptsLeft(accountId, left, now = new Date()) {
+  const tier = await getTier(accountId);
+  const plan = TIERS[tier];
+  const used = plan.limit - left; // negative when extra prompts are handed out
+  if (plan.period === 'day') {
+    const w = await getWindow(accountId, now);
+    if (w) {
+      await redis(['SET', windowKey(accountId), String(used), 'EX', ttlFor(w.resetsAt, now)]);
+    } else if (used !== 0) {
+      // Nothing used yet, so there is no window. Start one so the change has a refill time.
+      const ttl = String(Math.ceil(WINDOW_MS / 1000) + 3600);
+      await redis(['SET', windowKey(accountId), String(used), 'EX', ttl]);
+      await redis(['SET', windowStartKey(accountId), String(now.getTime()), 'EX', ttl]);
+    }
+  } else {
+    const ov = await getMonthOverride(accountId, now);
+    if (!ov) await redis(['DEL', monthResetKey(accountId)]);
+    await redis(['SET', usageKey(accountId, 'month', periodInfo(now).month.label), String(used), 'EX', String(40 * 24 * 3600)]);
+  }
+}
+
+// Give everything back now
+async function refillNow(accountId, now = new Date()) {
+  const tier = await getTier(accountId);
+  if (TIERS[tier].period === 'day') {
+    await redis(['DEL', windowKey(accountId)]);
+    await redis(['DEL', windowStartKey(accountId)]);
+  } else {
+    await redis(['DEL', usageKey(accountId, 'month', periodInfo(now).month.label)]);
+    await redis(['DEL', monthResetKey(accountId)]);
+  }
+}
+
+// Choose when the prompts refill (a time in ms, in the future)
+async function setRefillAt(accountId, at, now = new Date()) {
+  const tier = await getTier(accountId);
+  if (TIERS[tier].period === 'day') {
+    const w = await getWindow(accountId, now);
+    const used = w ? Number(await redis(['GET', windowKey(accountId)])) || 0 : 0;
+    const ttl = ttlFor(at, now);
+    await redis(['SET', windowKey(accountId), String(used), 'EX', ttl]);
+    await redis(['SET', windowStartKey(accountId), String(at - WINDOW_MS), 'EX', ttl]);
+  } else {
+    await redis(['SET', monthResetKey(accountId), String(at), 'EX', ttlFor(at, now)]);
+  }
 }
 
 // Stamp each message with the time it was first saved, keeping the time of messages that were already stored
@@ -249,5 +327,6 @@ module.exports = {
   ID_RE, INDEX_KEY, SESSION_COOKIE, STATE_COOKIE, NEXT_COOKIE, SESSION_SECONDS, MAX_PROJECTS_PER_USER,
   configured, redis, newId, key, userIndexKey, getProject, cleanBody, send,
   TIERS, getTier, getUsage, addUsage, countPrompts, stampMessages,
+  ACCOUNT_RE, setTier, setPromptsLeft, refillNow, setRefillAt,
   authConfigured, signSession, verifySession, parseCookies, cookie, safeNext, sessionUser, isAllowed, avatarUrl, missingHeader,
 };
