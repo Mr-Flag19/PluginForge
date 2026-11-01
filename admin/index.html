@@ -68,6 +68,12 @@
 
     <!-- Lookup -->
     <section id="panel" hidden>
+        <div role="tablist" class="flex gap-1 border-b border-[#3A3D42] mb-8">
+            <button role="tab" id="tab-projects" aria-selected="true" class="px-1 py-3 mr-5 text-sm font-medium text-[#f4f4f5] border-b-2 border-[#f4f4f5] -mb-px">Projects</button>
+            <button role="tab" id="tab-users" aria-selected="false" class="px-1 py-3 text-sm font-medium text-[#a1a1aa] hover:text-[#f4f4f5] border-b-2 border-transparent -mb-px">Users</button>
+        </div>
+
+        <div id="view-projects">
         <h1 class="text-2xl font-semibold tracking-tight">Project lookup</h1>
         <p class="mt-2 text-sm text-[#a1a1aa]">Paste a 16 character project ID to see who owns it, their plan and how many prompts they have left.</p>
 
@@ -89,6 +95,7 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <button id="r-inspect" class="text-sm font-medium text-[#26282B] bg-[#f4f4f5] hover:bg-[#e4e4e7] px-4 py-2 rounded-lg transition-colors">Inspect</button>
+                    <button id="r-user" class="text-sm text-[#f4f4f5] bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-3.5 py-2 rounded-lg transition-colors">View user</button>
                     <button id="r-copy" class="text-sm text-[#f4f4f5] bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-3.5 py-2 rounded-lg transition-colors">Copy ID</button>
                     <button id="r-delete" class="text-sm text-[#f4f4f5] bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-3.5 py-2 rounded-lg transition-colors">Delete</button>
                 </div>
@@ -135,12 +142,95 @@
         <div class="mt-4 bg-[#2C2E31] border border-[#3A3D42] rounded-lg overflow-hidden">
             <ul id="recent" class="divide-y divide-[#3A3D42]"></ul>
         </div>
+        </div>
+
+        <!-- Users -->
+        <div id="view-users" hidden>
+            <h1 class="text-2xl font-semibold tracking-tight">User lookup</h1>
+            <p class="mt-2 text-sm text-[#a1a1aa]">Paste a Discord ID to see someone's plan and prompts. You can change their plan, add or remove prompts and choose when they refill.</p>
+
+            <form id="user-form" class="mt-6 bg-[#2C2E31] border border-[#3A3D42] rounded-2xl p-3 shadow-xl">
+                <div class="bg-[#26282B] border border-[#3A3D42] focus-within:border-[#71717a] rounded-xl p-2 flex items-center gap-2 transition-all">
+                    <input id="user-id" type="text" inputmode="numeric" maxlength="25" autocomplete="off" spellcheck="false" placeholder="e.g. 1343294685829136505" class="w-full min-w-0 bg-transparent text-sm placeholder-[#71717a] focus:outline-none px-2 py-1.5 font-mono">
+                    <button type="submit" class="bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#26282B] text-xs font-semibold px-4 py-2 rounded-lg transition-colors shrink-0">Look up</button>
+                </div>
+            </form>
+            <p id="user-error" role="alert" class="mt-3 text-xs text-[#a1a1aa] min-h-[1rem]"></p>
+
+            <div id="user" hidden class="mt-6 bg-[#2C2E31] border border-[#3A3D42] rounded-xl overflow-hidden">
+                <div class="p-5">
+                    <h2 id="u-name" class="text-lg font-semibold break-words"></h2>
+                    <p id="u-id" class="mt-1 text-sm text-[#a1a1aa] break-all"></p>
+                </div>
+                <dl class="border-t border-[#3A3D42] divide-y divide-[#3A3D42] text-sm">
+                    <div class="px-5 py-3.5 grid grid-cols-3 gap-4"><dt class="text-[#a1a1aa]">Projects</dt><dd id="u-projects" class="col-span-2 text-[#f4f4f5]"></dd></div>
+                    <div class="px-5 py-3.5 grid grid-cols-3 gap-4">
+                        <dt class="text-[#a1a1aa] pt-2">Subscription</dt>
+                        <dd class="col-span-2 flex flex-wrap items-center gap-2">
+                            <select id="u-tier" class="bg-[#26282B] border border-[#3A3D42] rounded-lg text-sm text-[#f4f4f5] px-3 py-2 focus:outline-none focus:border-[#71717a]">
+                                <option value="stone">Stone Tier</option>
+                                <option value="iron">Iron Tier</option>
+                                <option value="diamond">Diamond Tier</option>
+                            </select>
+                            <button id="u-tier-save" class="text-sm text-[#f4f4f5] bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-3.5 py-2 rounded-lg transition-colors">Change plan</button>
+                        </dd>
+                    </div>
+                    <div class="px-5 py-3.5 grid grid-cols-3 gap-4">
+                        <dt class="text-[#a1a1aa]">Prompts left</dt>
+                        <dd class="col-span-2 min-w-0">
+                            <div id="u-left" class="text-[#f4f4f5]"></div>
+                            <div id="u-bar-wrap" class="mt-2 h-2 bg-[#26282B] rounded-full overflow-hidden"><div id="u-bar" class="h-full bg-[#f4f4f5] rounded-full" style="width:0%"></div></div>
+                            <div id="u-reset" class="mt-1.5 text-[#a1a1aa]"></div>
+                        </dd>
+                    </div>
+                    <div class="px-5 py-3.5 grid grid-cols-3 gap-4">
+                        <dt class="text-[#a1a1aa] pt-2">Change prompts</dt>
+                        <dd class="col-span-2 flex flex-wrap items-center gap-2">
+                            <input id="u-amount" type="number" min="0" step="1" inputmode="numeric" aria-label="Number of prompts" placeholder="Amount" class="w-28 bg-[#26282B] border border-[#3A3D42] rounded-lg text-sm text-[#f4f4f5] placeholder-[#71717a] px-3 py-2 focus:outline-none focus:border-[#71717a]">
+                            <button id="u-add" class="text-sm text-[#f4f4f5] bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-3.5 py-2 rounded-lg transition-colors">Add</button>
+                            <button id="u-remove" class="text-sm text-[#f4f4f5] bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-3.5 py-2 rounded-lg transition-colors">Remove</button>
+                            <button id="u-set" class="text-sm text-[#f4f4f5] bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-3.5 py-2 rounded-lg transition-colors">Set to</button>
+                        </dd>
+                    </div>
+                    <div class="px-5 py-3.5 grid grid-cols-3 gap-4">
+                        <dt class="text-[#a1a1aa] pt-2">Refill</dt>
+                        <dd class="col-span-2 flex flex-wrap items-center gap-2">
+                            <input id="u-refill-at" type="datetime-local" aria-label="Refill time" class="bg-[#26282B] border border-[#3A3D42] rounded-lg text-sm text-[#f4f4f5] px-3 py-2 focus:outline-none focus:border-[#71717a]">
+                            <button id="u-refill-set" class="text-sm text-[#f4f4f5] bg-[#26282B] hover:bg-[#3A3D42] border border-[#3A3D42] px-3.5 py-2 rounded-lg transition-colors">Set refill time</button>
+                            <button id="u-refill-now" class="text-sm text-[#26282B] bg-[#f4f4f5] hover:bg-[#e4e4e7] font-medium px-3.5 py-2 rounded-lg transition-colors">Refill now</button>
+                            <p class="basis-full text-xs text-[#71717a]">Times are in your local time zone.</p>
+                        </dd>
+                    </div>
+                </dl>
+                <p id="u-status" role="status" class="px-5 py-3 border-t border-[#3A3D42] text-sm text-[#a1a1aa] min-h-[2.75rem]"></p>
+            </div>
+        </div>
     </section>
 </main>
 
 <script>
 (function () {
     var $ = function (id) { return document.getElementById(id); };
+
+    // Date and time in the admin's own time zone, with the zone named (e.g. "2 Nov 2026, 09:00 GMT")
+    function fmtLocal(ms) {
+        return new Date(ms).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+    }
+
+    // The wording for an account's plan and prompts, used on both the project card and the user card
+    function usageView(acc) {
+        if (!acc) return { tier: 'Unavailable', left: 'Unavailable', pct: null, reset: '' };
+        var span = acc.period === 'day' ? '' : ' this month';
+        var left = acc.bonus > 0
+            ? acc.left + ' left (limit ' + acc.limit + ', plus ' + acc.bonus + ' extra)'
+            : acc.left + ' of ' + acc.limit + ' left' + span + ' (' + acc.used + ' used)';
+        return {
+            tier: acc.tierName + ' Tier',
+            left: left,
+            pct: Math.max(0, Math.min(100, (acc.left / Math.max(acc.limit, acc.left)) * 100)),
+            reset: acc.resetsAt ? 'Refills ' + fmtLocal(acc.resetsAt) : 'Full. Refills 24 hours after their next prompt.'
+        };
+    }
 
     function fmt(ms) {
         return new Date(ms).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' });
@@ -259,22 +349,12 @@
         $('r-id').textContent = 'Project ID: ' + p.id;
         $('r-created').textContent = fmt(p.createdAt);
         $('r-owner').textContent = (p.ownerName || 'Unknown') + (p.ownerUsername ? ' (@' + p.ownerUsername + ')' : '') + ', Discord ID ' + p.ownerId;
-        var acc = p.account;
-        if (acc) {
-            var span = acc.period === 'day' ? '' : ' this month';
-            $('r-tier').textContent = acc.tierName;
-            $('r-left').textContent = acc.left + ' of ' + acc.limit + ' left' + span + ' (' + acc.used + ' used)';
-            $('r-bar').style.width = Math.max(0, Math.min(100, (acc.left / acc.limit) * 100)) + '%';
-            $('r-bar-wrap').hidden = false;
-            $('r-reset').textContent = acc.resetsAt
-                ? 'Resets ' + new Date(acc.resetsAt).toUTCString().replace(' GMT', ' UTC')
-                : 'Full. Refills 24 hours after their next prompt.';
-        } else {
-            $('r-tier').textContent = 'Unavailable';
-            $('r-left').textContent = 'Unavailable';
-            $('r-bar-wrap').hidden = true;
-            $('r-reset').textContent = '';
-        }
+        var uv = usageView(p.account);
+        $('r-tier').textContent = uv.tier;
+        $('r-left').textContent = uv.left;
+        $('r-bar').style.width = (uv.pct || 0) + '%';
+        $('r-bar-wrap').hidden = uv.pct === null;
+        $('r-reset').textContent = uv.reset;
         $('r-delete').textContent = 'Delete';
         $('r-delete').dataset.confirm = '';
         $('result').hidden = false;
@@ -394,6 +474,113 @@
         if (error) return 'Sign in did not work. Try again.';
         return '';
     }
+
+
+    // ---- Tabs ----
+    function showView(name) {
+        var users = name === 'users';
+        $('view-projects').hidden = users;
+        $('view-users').hidden = !users;
+        $('tab-projects').setAttribute('aria-selected', users ? 'false' : 'true');
+        $('tab-users').setAttribute('aria-selected', users ? 'true' : 'false');
+        $('tab-projects').className = 'px-1 py-3 mr-5 text-sm font-medium border-b-2 -mb-px ' + (users ? 'text-[#a1a1aa] hover:text-[#f4f4f5] border-transparent' : 'text-[#f4f4f5] border-[#f4f4f5]');
+        $('tab-users').className = 'px-1 py-3 text-sm font-medium border-b-2 -mb-px ' + (users ? 'text-[#f4f4f5] border-[#f4f4f5]' : 'text-[#a1a1aa] hover:text-[#f4f4f5] border-transparent');
+        if (users) closeInspect();
+    }
+    $('tab-projects').addEventListener('click', function () { showView('projects'); });
+    $('tab-users').addEventListener('click', function () { showView('users'); });
+
+    // ---- User lookup ----
+    var userNow = null;
+
+    async function userFetch(query, method, body) {
+        var headers = { 'x-pf-request': '1' };
+        if (body) headers['Content-Type'] = 'application/json';
+        var r = await fetch('/api/admin/users' + query, { method: method || 'GET', credentials: 'same-origin', headers: headers, body: body ? JSON.stringify(body) : undefined });
+        var data = {};
+        try { data = await r.json(); } catch (e) {}
+        return { ok: r.ok, status: r.status, data: data };
+    }
+
+    // Value for a datetime-local box: the given time in the admin's own time zone
+    function toLocalInput(ms) {
+        var d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000);
+        return d.toISOString().slice(0, 16);
+    }
+
+    function renderUser(u) {
+        userNow = u;
+        $('u-name').textContent = u.name ? u.name + (u.username ? ' (@' + u.username + ')' : '') : 'Unknown user';
+        $('u-id').textContent = 'Discord ID: ' + u.id;
+        $('u-projects').textContent = u.projectCount ? String(u.projectCount) : 'None yet, so no name is on file';
+        var uv = usageView(u.usage);
+        $('u-tier').value = u.usage ? u.usage.tier : 'stone';
+        $('u-left').textContent = uv.left;
+        $('u-bar').style.width = (uv.pct || 0) + '%';
+        $('u-reset').textContent = uv.reset;
+        $('u-refill-at').value = u.usage && u.usage.resetsAt ? toLocalInput(u.usage.resetsAt) : '';
+        $('user').hidden = false;
+    }
+
+    async function lookupUser(id) {
+        $('user-error').textContent = '';
+        $('u-status').textContent = '';
+        $('user').hidden = true;
+        id = id.trim();
+        if (!/^[0-9]{5,25}$/.test(id)) {
+            $('user-error').textContent = 'A Discord ID is a long number, like 1343294685829136505.';
+            return;
+        }
+        var res = await userFetch('?id=' + encodeURIComponent(id));
+        if (res.status === 401) return signedOutView('Your session ended. Sign in again.');
+        if (res.status === 403) return deniedView();
+        if (!res.ok) { $('user-error').textContent = res.data.error || 'Lookup failed.'; return; }
+        renderUser(res.data);
+    }
+
+    // Send one change, then show the account as it is afterwards
+    async function userAction(body, doneText, button) {
+        if (!userNow) return;
+        var buttons = $('user').querySelectorAll('button');
+        buttons.forEach(function (b) { b.disabled = true; });
+        $('u-status').textContent = 'Saving...';
+        var res = await userFetch('', 'POST', Object.assign({ id: userNow.id }, body));
+        buttons.forEach(function (b) { b.disabled = false; });
+        if (res.status === 401) return signedOutView('Your session ended. Sign in again.');
+        if (res.status === 403) return deniedView();
+        if (!res.ok) { $('u-status').textContent = res.data.error || 'That did not work.'; return; }
+        renderUser(res.data);
+        $('u-status').textContent = doneText;
+    }
+
+    function amount() {
+        var raw = $('u-amount').value.trim();
+        if (!/^[0-9]+$/.test(raw)) { $('u-status').textContent = 'Enter a whole number of prompts first.'; return null; }
+        return parseInt(raw, 10);
+    }
+
+    $('user-form').addEventListener('submit', function (e) { e.preventDefault(); lookupUser($('user-id').value); });
+    $('r-user').addEventListener('click', function () {
+        if (!current) return;
+        showView('users');
+        $('user-id').value = current.ownerId;
+        lookupUser(current.ownerId);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    $('u-tier-save').addEventListener('click', function () {
+        var tier = $('u-tier').value;
+        userAction({ action: 'tier', tier: tier }, 'Plan changed to ' + $('u-tier').options[$('u-tier').selectedIndex].text + '.');
+    });
+    $('u-add').addEventListener('click', function () { var n = amount(); if (n !== null) userAction({ action: 'prompts', add: n }, 'Added ' + n + ' prompts.'); });
+    $('u-remove').addEventListener('click', function () { var n = amount(); if (n !== null) userAction({ action: 'prompts', add: -n }, 'Removed ' + n + ' prompts.'); });
+    $('u-set').addEventListener('click', function () { var n = amount(); if (n !== null) userAction({ action: 'prompts', set: n }, 'Prompts left set to ' + n + '.'); });
+    $('u-refill-now').addEventListener('click', function () { userAction({ action: 'refill', now: true }, 'Refilled. All prompts are back.'); });
+    $('u-refill-set').addEventListener('click', function () {
+        var v = $('u-refill-at').value;
+        var at = v ? new Date(v).getTime() : NaN;
+        if (!isFinite(at)) { $('u-status').textContent = 'Choose a date and time first.'; return; }
+        userAction({ action: 'refill', at: at }, 'Refill time set.');
+    });
 
     async function start() {
         var message = loginMessage();
