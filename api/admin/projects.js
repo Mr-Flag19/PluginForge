@@ -1,8 +1,8 @@
 // Admin only (a signed-in Discord account whose ID is listed in ADMIN_ACCOUNTS)
-//   GET    /api/admin/projects?id=<id>  one full project
+//   GET    /api/admin/projects?id=<id>  one full project, plus its owner's plan and generation usage
 //   GET    /api/admin/projects          the 50 most recently updated projects
 //   DELETE /api/admin/projects?id=<id>  remove a project
-const { ID_RE, INDEX_KEY, configured, redis, key, userIndexKey, getProject, send, authConfigured, sessionUser, isAllowed, missingHeader } = require('../_lib');
+const { ID_RE, INDEX_KEY, configured, redis, key, userIndexKey, getProject, getUsage, send, authConfigured, sessionUser, isAllowed, missingHeader } = require('../_lib');
 
 module.exports = async (req, res) => {
   if (!authConfigured()) return send(res, 503, { error: 'Sign in is not set up on the server' });
@@ -19,7 +19,10 @@ module.exports = async (req, res) => {
       if (!ID_RE.test(id)) return send(res, 400, { error: 'A project ID is 16 letters and numbers' });
       const project = await getProject(id);
       if (!project) return send(res, 404, { error: 'No project with that ID' });
-      return send(res, 200, project);
+      // The plan and usage belong to the account that owns the project, not to the admin looking at it
+      let account = null;
+      try { account = await getUsage(project.ownerId); } catch (e) {}
+      return send(res, 200, { ...project, account });
     }
 
     if (req.method === 'GET') {
