@@ -56,6 +56,18 @@
         <p id="login-error" role="alert" class="mt-3 text-xs text-[#a1a1aa] leading-relaxed min-h-[1rem] break-words"></p>
     </section>
 
+    <!-- Access denied -->
+    <section id="denied" hidden class="max-w-md mx-auto mt-10">
+        <div class="bg-[#2C2E31] border border-[#3A3D42] rounded-2xl p-8 text-center">
+            <div class="w-14 h-14 mx-auto rounded-full bg-[#3A3D42] flex items-center justify-center">
+                <svg class="w-6 h-6 text-[#fca5a5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7.5 3v5.25c0 4.5-3.1 8.2-7.5 9.75-4.4-1.55-7.5-5.25-7.5-9.75V6L12 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8.5v4m0 3h.01"/></svg>
+            </div>
+            <h1 class="mt-5 text-2xl font-semibold tracking-tight">Access Denied</h1>
+            <p class="mt-2 text-sm text-[#a1a1aa]">You do not have access to this page.</p>
+            <a href="/" class="mt-6 inline-block bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#26282B] text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">Return to home</a>
+        </div>
+    </section>
+
     <!-- Lookup -->
     <section id="panel" hidden>
         <h1 class="text-2xl font-semibold tracking-tight">Project lookup</h1>
@@ -94,9 +106,7 @@
                         <div id="r-reset" class="mt-1.5 text-[#a1a1aa]"></div>
                     </dd>
                 </div>
-                <div class="px-5 py-3.5 grid grid-cols-3 gap-4"><dt class="text-[#a1a1aa]">Prompts in this project</dt><dd id="r-count" class="col-span-2 text-[#f4f4f5]"></dd></div>
                 <div class="px-5 py-3.5 grid grid-cols-3 gap-4"><dt class="text-[#a1a1aa]">Created</dt><dd id="r-created" class="col-span-2 text-[#f4f4f5]"></dd></div>
-                <div class="px-5 py-3.5 grid grid-cols-3 gap-4"><dt class="text-[#a1a1aa]">Last updated</dt><dd id="r-updated" class="col-span-2 text-[#f4f4f5]"></dd></div>
             </dl>
         </div>
 
@@ -135,7 +145,7 @@
     var $ = function (id) { return document.getElementById(id); };
 
     function fmt(ms) {
-        return new Date(ms).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+        return new Date(ms).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' });
     }
 
     async function adminFetch(query, method) {
@@ -151,8 +161,21 @@
 
     function show(signedIn) {
         $('login').hidden = signedIn;
+        $('denied').hidden = true;
         $('panel').hidden = !signedIn;
         $('signout').hidden = !signedIn;
+    }
+
+    // Signed in, but not an admin (or the server said no): show only the access denied card
+    function deniedView() {
+        $('login').hidden = true;
+        $('panel').hidden = true;
+        $('denied').hidden = false;
+        $('who').hidden = true;
+        $('signout').hidden = false;
+        $('result').hidden = true;
+        $('inspect').hidden = true;
+        document.body.style.overflow = '';
     }
 
     function signedOutView(message) {
@@ -172,7 +195,7 @@
     async function loadRecent() {
         var res = await adminFetch('');
         if (res.status === 401) return signedOutView('Your session ended. Sign in again.');
-        if (res.status === 403) return signedOutView('This account is not an admin.');
+        if (res.status === 403) return deniedView();
         var list = $('recent');
         list.textContent = '';
         if (!res.ok) {
@@ -234,23 +257,23 @@
         $('r-title').textContent = p.title;
         $('r-id').textContent = 'Project ID: ' + p.id;
         $('r-created').textContent = fmt(p.createdAt);
-        $('r-updated').textContent = fmt(p.updatedAt);
         $('r-owner').textContent = (p.ownerName || 'Unknown') + (p.ownerUsername ? ' (@' + p.ownerUsername + ')' : '') + ', Discord ID ' + p.ownerId;
         var acc = p.account;
         if (acc) {
-            var span = acc.period === 'day' ? 'today' : 'this month';
+            var span = acc.period === 'day' ? '' : ' this month';
             $('r-tier').textContent = acc.tierName;
-            $('r-left').textContent = acc.left + ' of ' + acc.limit + ' left ' + span + ' (' + acc.used + ' used)';
+            $('r-left').textContent = acc.left + ' of ' + acc.limit + ' left' + span + ' (' + acc.used + ' used)';
             $('r-bar').style.width = Math.max(0, Math.min(100, (acc.left / acc.limit) * 100)) + '%';
             $('r-bar-wrap').hidden = false;
-            $('r-reset').textContent = 'Resets ' + new Date(acc.resetsAt).toUTCString().replace(' GMT', ' UTC');
+            $('r-reset').textContent = acc.resetsAt
+                ? 'Resets ' + new Date(acc.resetsAt).toUTCString().replace(' GMT', ' UTC')
+                : 'Full. Refills 24 hours after their next prompt.';
         } else {
             $('r-tier').textContent = 'Unavailable';
             $('r-left').textContent = 'Unavailable';
             $('r-bar-wrap').hidden = true;
             $('r-reset').textContent = '';
         }
-        $('r-count').textContent = String(promptsOf(p).length);
         $('r-delete').textContent = 'Delete';
         $('r-delete').dataset.confirm = '';
         $('result').hidden = false;
@@ -274,8 +297,14 @@
             var card = document.createElement('li');
             card.className = 'bg-[#2C2E31] border border-[#3A3D42] rounded-lg p-4';
             var head = document.createElement('div');
-            head.className = 'text-xs font-medium text-[#a1a1aa] mb-2';
-            head.textContent = 'Prompt ' + (i + 1) + ' of ' + prompts.length;
+            head.className = 'flex items-baseline justify-between gap-3 text-xs text-[#a1a1aa] mb-2';
+            var label = document.createElement('span');
+            label.className = 'font-medium';
+            label.textContent = 'Prompt ' + (i + 1) + ' of ' + prompts.length;
+            var when = document.createElement('span');
+            when.textContent = m.at ? fmt(m.at) : 'Time not recorded';
+            head.appendChild(label);
+            head.appendChild(when);
             var body = document.createElement('div');
             body.className = 'text-sm leading-relaxed whitespace-pre-wrap break-words text-[#f4f4f5]';
             body.textContent = m.text;
@@ -307,7 +336,7 @@
         }
         var res = await adminFetch('?id=' + encodeURIComponent(id));
         if (res.status === 401) return signedOutView('Your session ended. Sign in again.');
-        if (res.status === 403) return signedOutView('This account is not an admin.');
+        if (res.status === 403) return deniedView();
         if (!res.ok) {
             $('lookup-error').textContent = res.data.error || 'Lookup failed.';
             return;
@@ -371,12 +400,7 @@
         try { me = await fetch('/api/auth/me', { credentials: 'same-origin' }); } catch (e) {}
         if (me && me.ok) {
             var user = await me.json();
-            if (!user.admin) {
-                // Signed in with Discord, but not on the admin list. Show the ID so the owner can add it.
-                var id = String(user.id).replace(/[^a-zA-Z0-9-]/g, '');
-                signedOutView('You are signed in as ' + user.name + (user.username ? ' (@' + user.username + ')' : '') + ', which is not an admin account. To allow it, add the Discord ID ' + id + ' to ADMIN_ACCOUNTS in Vercel and redeploy. Or sign in with a different account.');
-                return;
-            }
+            if (!user.admin) return deniedView();
             $('who').textContent = user.name + (user.username ? ' · @' + user.username : '');
             $('who').hidden = false;
             show(true);
