@@ -42,7 +42,8 @@ const key = (id) => 'project:' + id;
 const userIndexKey = (accountId) => 'user:' + accountId + ':projects';
 
 // ---- Plans and generation usage ----
-// Limits match the pricing page. Stone resets every day, Iron and Diamond every month (UTC).
+// Limits match the pricing page. Stone refills 24 hours after the first prompt made once it was full again
+// (a rolling window, not midnight). Iron and Diamond reset on the 1st of each month (UTC).
 // A plan is stored per account at user:<id>:tier ("stone", "iron" or "diamond"). No key means Stone.
 const TIERS = {
   stone: { name: 'Stone', limit: 5, period: 'day' },
@@ -70,28 +71,63 @@ async function getTier(accountId) {
   return Object.prototype.hasOwnProperty.call(TIERS, t) ? t : 'stone';
 }
 
-// What this account has used so far in the current period of its plan
+const WINDOW_MS = 24 * 60 * 60 * 1000;
+const windowKey = (accountId) => 'usage:' + accountId + ':window';
+const windowStartKey = (accountId) => 'usage:' + accountId + ':windowstart';
+
+// The 24 hour window is running if the first prompt of it was made less than 24 hours ago
+async function getWindow(accountId, now) {
+  const start = Number(await redis(['GET', windowStartKey(accountId)])) || 0;
+  if (start && now.getTime() < start + WINDOW_MS) return { start, resetsAt: start + WINDOW_MS };
+  return null;
+}
+
+// What this account has used so far in the current period of its plan.
+// resetsAt is null for a Stone account whose window has not started yet (nothing used since the last refill).
 async function getUsage(accountId, now = new Date()) {
   const tier = await getTier(accountId);
   const plan = TIERS[tier];
-  const p = periodInfo(now)[plan.period];
-  const used = Number(await redis(['GET', usageKey(accountId, plan.period, p.label)])) || 0;
-  return {
-    tier, tierName: plan.name, period: plan.period, limit: plan.limit,
-    used, left: Math.max(0, plan.limit - used), resetsAt: p.resetsAt,
-  };
+  let used = 0;
+  let resetsAt = null;
+  if (plan.period === 'day') {
+    const w = await getWindow(accountId, now);
+    if (w) {
+      used = Number(await redis(['GET', windowKey(accountId)])) || 0;
+      resetsAt = w.resetsAt;
+    }
+  } else {
+    const p = periodInfo(now).month;
+    used = Number(await redis(['GET', usageKey(accountId, 'month', p.label)])) || 0;
+    resetsAt = p.resetsAt;
+  }
+  return { tier, tierName: plan.name, period: plan.period, limit: plan.limit, used, left: Math.max(0, plan.limit - used), resetsAt };
 }
 
-// One generation per prompt. The day and month counters both move, so changing plan never loses history.
+// One generation per prompt. Both counters move, so changing plan never loses history.
 async function addUsage(accountId, count, now = new Date()) {
   if (!(count > 0)) return;
-  const p = periodInfo(now);
-  const dayKey = usageKey(accountId, 'day', p.day.label);
-  const monthKey = usageKey(accountId, 'month', p.month.label);
-  await redis(['INCRBY', dayKey, String(count)]);
-  await redis(['EXPIRE', dayKey, String(3 * 24 * 3600)]);
+  const ttl = String(Math.ceil(WINDOW_MS / 1000) + 3600);
+  const w = await getWindow(accountId, now);
+  if (w) {
+    await redis(['INCRBY', windowKey(accountId), String(count)]);
+  } else {
+    // First prompt since the last refill: this starts a new 24 hour window
+    await redis(['SET', windowKey(accountId), String(count), 'EX', ttl]);
+    await redis(['SET', windowStartKey(accountId), String(now.getTime()), 'EX', ttl]);
+  }
+  const monthKey = usageKey(accountId, 'month', periodInfo(now).month.label);
   await redis(['INCRBY', monthKey, String(count)]);
   await redis(['EXPIRE', monthKey, String(40 * 24 * 3600)]);
+}
+
+// Stamp each message with the time it was first saved, keeping the time of messages that were already stored
+function stampMessages(messages, oldMessages, now) {
+  const old = Array.isArray(oldMessages) ? oldMessages : [];
+  return messages.map((m, i) => {
+    const o = old[i];
+    const at = o && o.role === m.role && o.text === m.text && o.at ? o.at : now;
+    return { role: m.role, text: m.text, at };
+  });
 }
 
 const countPrompts = (messages) => (Array.isArray(messages) ? messages.filter((m) => m && m.role === 'user').length : 0);
@@ -212,6 +248,6 @@ function missingHeader(req) {
 module.exports = {
   ID_RE, INDEX_KEY, SESSION_COOKIE, STATE_COOKIE, NEXT_COOKIE, SESSION_SECONDS, MAX_PROJECTS_PER_USER,
   configured, redis, newId, key, userIndexKey, getProject, cleanBody, send,
-  TIERS, getTier, getUsage, addUsage, countPrompts,
+  TIERS, getTier, getUsage, addUsage, countPrompts, stampMessages,
   authConfigured, signSession, verifySession, parseCookies, cookie, safeNext, sessionUser, isAllowed, avatarUrl, missingHeader,
 };
