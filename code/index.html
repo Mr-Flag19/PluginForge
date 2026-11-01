@@ -724,7 +724,7 @@
                             <div>
                                 <div className="flex items-center justify-between text-[11px] font-mono text-[#71717a] mb-1.5">
                                     <span>{user.usage.tierName} Tier</span>
-                                    <span className="text-[#a1a1aa]">{user.usage.left} / {user.usage.limit} left {user.usage.period === 'day' ? 'today' : 'this month'}</span>
+                                    <span className="text-[#a1a1aa]">{user.usage.left} / {user.usage.limit} prompts left {user.usage.period === 'day' ? 'today' : 'this month'}</span>
                                 </div>
                                 <div className="h-1 rounded-full bg-[#3A3D42] overflow-hidden">
                                     <div className="h-full bg-[#f4f4f5] rounded-full" style={{ width: Math.max(0, Math.min(100, (user.usage.left / user.usage.limit) * 100)) + '%' }}></div>
@@ -744,9 +744,6 @@
                                 <Icon d={ICONS.signout} className="w-3.5 h-3.5" />
                             </button>
                         </div>
-                        {user.admin && (
-                            <a href="/admin/" className="block text-center text-[11px] font-mono text-[#a1a1aa] hover:text-[#f4f4f5] bg-[#26282B] border border-[#3A3D42] rounded-md py-1.5 transition-colors">Admin panel</a>
-                        )}
                     </div>
                 </aside>
 
