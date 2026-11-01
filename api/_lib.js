@@ -41,6 +41,61 @@ function newId() {
 const key = (id) => 'project:' + id;
 const userIndexKey = (accountId) => 'user:' + accountId + ':projects';
 
+// ---- Plans and generation usage ----
+// Limits match the pricing page. Stone resets every day, Iron and Diamond every month (UTC).
+// A plan is stored per account at user:<id>:tier ("stone", "iron" or "diamond"). No key means Stone.
+const TIERS = {
+  stone: { name: 'Stone', limit: 5, period: 'day' },
+  iron: { name: 'Iron', limit: 250, period: 'month' },
+  diamond: { name: 'Diamond', limit: 1000, period: 'month' },
+};
+const tierKey = (accountId) => 'user:' + accountId + ':tier';
+const usageKey = (accountId, period, label) => 'usage:' + accountId + ':' + period + ':' + label;
+
+// The current day and month (UTC) and when each one ends
+function periodInfo(now = new Date()) {
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  const d = now.getUTCDate();
+  const mm = String(m + 1).padStart(2, '0');
+  const dd = String(d).padStart(2, '0');
+  return {
+    day: { label: y + '-' + mm + '-' + dd, resetsAt: Date.UTC(y, m, d + 1) },
+    month: { label: y + '-' + mm, resetsAt: Date.UTC(y, m + 1, 1) },
+  };
+}
+
+async function getTier(accountId) {
+  const t = await redis(['GET', tierKey(accountId)]);
+  return Object.prototype.hasOwnProperty.call(TIERS, t) ? t : 'stone';
+}
+
+// What this account has used so far in the current period of its plan
+async function getUsage(accountId, now = new Date()) {
+  const tier = await getTier(accountId);
+  const plan = TIERS[tier];
+  const p = periodInfo(now)[plan.period];
+  const used = Number(await redis(['GET', usageKey(accountId, plan.period, p.label)])) || 0;
+  return {
+    tier, tierName: plan.name, period: plan.period, limit: plan.limit,
+    used, left: Math.max(0, plan.limit - used), resetsAt: p.resetsAt,
+  };
+}
+
+// One generation per prompt. The day and month counters both move, so changing plan never loses history.
+async function addUsage(accountId, count, now = new Date()) {
+  if (!(count > 0)) return;
+  const p = periodInfo(now);
+  const dayKey = usageKey(accountId, 'day', p.day.label);
+  const monthKey = usageKey(accountId, 'month', p.month.label);
+  await redis(['INCRBY', dayKey, String(count)]);
+  await redis(['EXPIRE', dayKey, String(3 * 24 * 3600)]);
+  await redis(['INCRBY', monthKey, String(count)]);
+  await redis(['EXPIRE', monthKey, String(40 * 24 * 3600)]);
+}
+
+const countPrompts = (messages) => (Array.isArray(messages) ? messages.filter((m) => m && m.role === 'user').length : 0);
+
 async function getProject(id) {
   const raw = await redis(['GET', key(id)]);
   return raw ? JSON.parse(raw) : null;
@@ -157,5 +212,6 @@ function missingHeader(req) {
 module.exports = {
   ID_RE, INDEX_KEY, SESSION_COOKIE, STATE_COOKIE, NEXT_COOKIE, SESSION_SECONDS, MAX_PROJECTS_PER_USER,
   configured, redis, newId, key, userIndexKey, getProject, cleanBody, send,
+  TIERS, getTier, getUsage, addUsage, countPrompts,
   authConfigured, signSession, verifySession, parseCookies, cookie, safeNext, sessionUser, isAllowed, avatarUrl, missingHeader,
 };
