@@ -14,6 +14,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+    /* Hover (or keyboard focus) on the prompts meter shows when it refills */
+    .usage-wrap { position: relative; outline: none; border-radius: 8px; cursor: default; }
+    .usage-tip { position: absolute; left: 0; right: 0; bottom: calc(100% + 10px); opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity .15s ease, transform .15s ease; z-index: 30; }
+    .usage-wrap:hover .usage-tip, .usage-wrap:focus .usage-tip { opacity: 1; transform: translateY(0); }
     /* Single dark look, set explicitly so it reads the same on any host theme */
     :root {
         color-scheme: dark;
@@ -475,6 +479,52 @@
         );
     }
 
+    // "5h 12m", "2d 3h", "under a minute"
+    function timeUntil(ms) {
+        const mins = Math.ceil(ms / 60000);
+        if (mins < 1) return 'under a minute';
+        const d = Math.floor(mins / 1440), h = Math.floor((mins % 1440) / 60), m = mins % 60;
+        if (d > 0) return d + 'd ' + h + 'h';
+        if (h > 0) return h + 'h ' + m + 'm';
+        return m + 'm';
+    }
+
+    // The tier and prompts left. Hover (or focus) it to see when the prompts refill.
+    function UsageMeter({ usage }) {
+        const [now, setNow] = React.useState(Date.now());
+        React.useEffect(() => {
+            const t = setInterval(() => setNow(Date.now()), 15000);
+            return () => clearInterval(t);
+        }, []);
+        const total = Math.max(usage.limit, usage.left);
+        let headline, detail;
+        if (!usage.resetsAt) {
+            headline = usage.used > 0 ? 'Refilling' : 'Prompts are full';
+            detail = 'Your 24 hour timer starts when you send your next prompt.';
+        } else if (usage.resetsAt <= now) {
+            headline = 'Refilling now';
+            detail = 'Your prompts are being topped up.';
+        } else {
+            headline = 'Refills in ' + timeUntil(usage.resetsAt - now);
+            detail = new Date(usage.resetsAt).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+        }
+        return (
+            <div className="usage-wrap" tabIndex={0} aria-describedby="usage-tip">
+                <div role="tooltip" id="usage-tip" className="usage-tip bg-[#26282B] border border-[#3A3D42] rounded-lg shadow-xl px-3 py-2.5">
+                    <div className="text-xs font-medium text-[#f4f4f5]">{headline}</div>
+                    <div className="mt-0.5 text-[11px] text-[#a1a1aa]">{detail}</div>
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-mono text-[#71717a] mb-1.5">
+                    <span>{usage.tierName} Tier</span>
+                    <span className="text-[#a1a1aa]">{usage.left} / {total} prompts left{usage.period === 'day' ? '' : ' this month'}</span>
+                </div>
+                <div className="h-1 rounded-full bg-[#3A3D42] overflow-hidden">
+                    <div className="h-full bg-[#f4f4f5] rounded-full" style={{ width: Math.max(0, Math.min(100, (usage.left / total) * 100)) + '%' }}></div>
+                </div>
+            </div>
+        );
+    }
+
     function ChatApp({ user, chats, setChats, activeId, setActiveId, loadingProject, onSignOut, onSessionExpired, onUsage }) {
         const [sidebarOpen, setSidebarOpen] = React.useState(false);
         const [query, setQuery] = React.useState('');
@@ -718,17 +768,7 @@
 
                     {/* User card */}
                     <div className="border-t border-[#3A3D42] p-3 space-y-3">
-                        {user.usage && (
-                            <div>
-                                <div className="flex items-center justify-between text-[11px] font-mono text-[#71717a] mb-1.5">
-                                    <span>{user.usage.tierName} Tier</span>
-                                    <span className="text-[#a1a1aa]">{user.usage.left} / {Math.max(user.usage.limit, user.usage.left)} prompts left{user.usage.period === 'day' ? '' : ' this month'}</span>
-                                </div>
-                                <div className="h-1 rounded-full bg-[#3A3D42] overflow-hidden">
-                                    <div className="h-full bg-[#f4f4f5] rounded-full" style={{ width: Math.max(0, Math.min(100, (user.usage.left / Math.max(user.usage.limit, user.usage.left)) * 100)) + '%' }}></div>
-                                </div>
-                            </div>
-                        )}
+                        {user.usage && <UsageMeter usage={user.usage} />}
                         <div className="flex items-center gap-3 p-1.5 -m-1.5 rounded-lg">
                             <Avatar user={user} />
                             <div className="min-w-0 flex-1">
@@ -948,6 +988,42 @@
             setChats([]);
             setActiveId(null);
         }, []);
+
+        // Ask the server for the latest plan and prompts, so refills and changes made by an admin show up without a refresh
+        const refreshUsage = React.useCallback(async () => {
+            if (document.hidden) return;
+            let r;
+            try { r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' }); } catch (e) { return; }
+            if (r.status === 401) return onSessionExpired();
+            if (!r.ok) return;
+            let d = null;
+            try { d = await r.json(); } catch (e) {}
+            if (d && d.usage) onUsage(d.usage);
+        }, [onSessionExpired, onUsage]);
+
+        // Check every 30 seconds while the tab is open, and straight away when the person comes back to it
+        React.useEffect(() => {
+            if (auth.status !== 'signedIn') return;
+            const timer = setInterval(refreshUsage, 30000);
+            const onVisible = () => { if (!document.hidden) refreshUsage(); };
+            document.addEventListener('visibilitychange', onVisible);
+            window.addEventListener('focus', refreshUsage);
+            return () => {
+                clearInterval(timer);
+                document.removeEventListener('visibilitychange', onVisible);
+                window.removeEventListener('focus', refreshUsage);
+            };
+        }, [auth.status, refreshUsage]);
+
+        // And again the moment a refill is due
+        const refillAt = user && user.usage ? user.usage.resetsAt : null;
+        React.useEffect(() => {
+            if (auth.status !== 'signedIn' || !refillAt) return;
+            const wait = refillAt - Date.now() + 1500;
+            if (wait > 2147483647) return;
+            const timer = setTimeout(refreshUsage, Math.max(1000, wait));
+            return () => clearTimeout(timer);
+        }, [auth.status, refillAt, refreshUsage]);
 
         const onSignOut = async () => {
             try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', headers: { 'x-pf-request': '1' } }); } catch (e) {}
