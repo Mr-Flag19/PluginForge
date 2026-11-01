@@ -1,6 +1,6 @@
 // GET  /api/projects  your projects, newest first (titles only)
 // POST /api/projects  creates a project and returns its server-generated ID
-const { INDEX_KEY, MAX_PROJECTS_PER_USER, configured, redis, newId, key, userIndexKey, cleanBody, send, sessionUser, missingHeader } = require('../_lib');
+const { INDEX_KEY, MAX_PROJECTS_PER_USER, configured, redis, newId, key, userIndexKey, cleanBody, send, sessionUser, missingHeader, addUsage, getUsage, countPrompts } = require('../_lib');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'POST') return send(res, 405, { error: 'Method not allowed' });
@@ -37,7 +37,13 @@ module.exports = async (req, res) => {
       if (stored === 'OK') {
         await redis(['ZADD', INDEX_KEY, String(now), id]);
         await redis(['ZADD', userIndexKey(user.id), String(now), id]);
-        return send(res, 201, { id, createdAt: now, updatedAt: now });
+        // Each prompt counts as one generation. A counting problem must never lose the project.
+        let usage = null;
+        try {
+          await addUsage(user.id, countPrompts(body.messages));
+          usage = await getUsage(user.id);
+        } catch (e) {}
+        return send(res, 201, { id, createdAt: now, updatedAt: now, usage });
       }
     }
     return send(res, 500, { error: 'Could not create a unique ID' });
