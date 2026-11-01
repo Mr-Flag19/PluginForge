@@ -10,5 +10,5 @@ module.exports = async (req, res) => {
   if (configured()) {
     try { usage = await getUsage(user.id); } catch (e) {}
   }
-  return send(res, 200, { name: user.name, username: user.username || '', id: user.id, avatar: avatarUrl(user), admin: isAllowed(user), usage });
+  return send(res, 200, { name: user.name, username: user.username || '', email: user.email || '', id: user.id, avatar: avatarUrl(user), admin: isAllowed(user), usage });
 };
