@@ -1,0 +1,11 @@
+    :root { color-scheme: dark; --bg: #26282B; --fg: #f4f4f5; }
+    body { margin: 0; font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg); color: var(--fg); -webkit-font-smoothing: antialiased; }
+    /* One typeface everywhere. Anything marked font-mono (IDs, counters) just gets even-width digits. */
+    .font-mono { font-family: inherit; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+    .bg-grid-pattern { background-image: radial-gradient(#3A3D42 1px, transparent 1px); background-size: 24px 24px; }
+    /* Tailwind's flex/grid classes would otherwise override the hidden attribute and keep popups visible */
+    [hidden] { display: none !important; }
+    ::selection { background: #3A3D42; color: #f4f4f5; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #26282B; }
+    ::-webkit-scrollbar-thumb { background: #3A3D42; border-radius: 3px; }

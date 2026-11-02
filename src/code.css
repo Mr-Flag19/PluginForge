@@ -1,0 +1,47 @@
+    /* Hover (or keyboard focus) on the prompts meter shows when it refills */
+    .usage-wrap { position: relative; outline: none; border-radius: 8px; cursor: default; }
+    .usage-tip { position: absolute; left: 0; right: 0; bottom: calc(100% + 10px); opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity .15s ease, transform .15s ease; z-index: 30; }
+    .usage-wrap:hover .usage-tip, .usage-wrap:focus .usage-tip { opacity: 1; transform: translateY(0); }
+    /* Single dark look, set explicitly so it reads the same on any host theme */
+    :root {
+        color-scheme: dark;
+        scroll-behavior: smooth;
+        --bg: #26282B;
+        --fg: #f4f4f5;
+    }
+    body {
+        font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--bg);
+        color: var(--fg);
+        -webkit-font-smoothing: antialiased;
+    }
+    html, body, #root {
+        height: 100%;
+    }
+    body { margin: 0; }
+    ::selection {
+        background: #3A3D42;
+        color: #f4f4f5;
+    }
+    .font-mono {
+        font-family: 'JetBrains Mono', monospace;
+    }
+    /* Developer dot-grid background overlay */
+    .bg-grid-pattern {
+        background-image: radial-gradient(#3A3D42 1px, transparent 1px);
+        background-size: 24px 24px;
+    }
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #26282B;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #3A3D42;
+        border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #4b4f56;
+    }
