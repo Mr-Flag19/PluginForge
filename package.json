@@ -1,0 +1,24 @@
+{
+  "name": "pluginforge",
+  "private": true,
+  "version": "1.0.0",
+  "description": "PluginForge: static pages plus Vercel serverless API",
+  "scripts": {
+    "build": "node build.mjs",
+    "test:api": "node test/api.test.js",
+    "test:ui": "node test/ui.test.js",
+    "test": "npm run test:api && npm run test:ui"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "esbuild": "0.24.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tailwindcss": "3.4.17",
+    "ioredis": "6.0.0",
+    "playwright": "1.56.1"
+  }
+}
